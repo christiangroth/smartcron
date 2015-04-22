@@ -1,4 +1,4 @@
-package de.chrgroth.smartcron;
+package de.chrgroth.smartcron.api;
 
 /**
  * Base interface to implement task with dynamic scheduling.
@@ -12,5 +12,5 @@ public interface SmartcronTask {
 	 * 
 	 * @return next execution strategy
 	 */
-	SmartcronExecution run();
+	SmartcronResult run();
 }

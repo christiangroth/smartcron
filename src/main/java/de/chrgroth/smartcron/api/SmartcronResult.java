@@ -1,13 +1,13 @@
-package de.chrgroth.smartcron;
+package de.chrgroth.smartcron.api;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 /**
  * Simple POJO to control execution of {@link SmartcronTask} methods.
  * 
  * @author Christian Groth
  */
-public class SmartcronExecution {
+public class SmartcronResult {
 	
 	/**
 	 * Enumeration defining all possible schedule modes.
@@ -19,14 +19,14 @@ public class SmartcronExecution {
 	}
 	
 	/**
-	 * Creates an execution for given date.
+	 * Creates an execution for given schedule date.
 	 * 
 	 * @param schedule
 	 *            date when next execution should happen
 	 * @return execution object
 	 */
-	public static SmartcronExecution SCHEDULE(Date schedule) {
-		return new SmartcronExecution(Mode.SCHEDULE, schedule, 0l);
+	public static SmartcronResult SCHEDULE(LocalDateTime schedule) {
+		return new SmartcronResult(Mode.SCHEDULE, schedule, 0l);
 	}
 	
 	/**
@@ -36,24 +36,24 @@ public class SmartcronExecution {
 	 *            number of milliseconds until next execution
 	 * @return execution object
 	 */
-	public static SmartcronExecution DELAY(long delay) {
-		return new SmartcronExecution(Mode.DELAY, null, delay);
+	public static SmartcronResult DELAY(long delay) {
+		return new SmartcronResult(Mode.DELAY, null, delay);
 	}
 	
 	/**
-	 * Blocks further executions.
+	 * Aborts further executions.
 	 * 
 	 * @return execution object
 	 */
-	public static SmartcronExecution ABORT() {
-		return new SmartcronExecution(Mode.ABORT, null, 0l);
+	public static SmartcronResult ABORT() {
+		return new SmartcronResult(Mode.ABORT, null, 0l);
 	}
 	
 	private final Mode mode;
-	private final Date schedule;
+	private final LocalDateTime schedule;
 	private final long delay;
 	
-	private SmartcronExecution(Mode mode, Date schedule, long delay) {
+	private SmartcronResult(Mode mode, LocalDateTime schedule, long delay) {
 		this.mode = mode;
 		this.schedule = schedule;
 		this.delay = delay;
@@ -73,11 +73,9 @@ public class SmartcronExecution {
 	 * 
 	 * @return schedule date or null
 	 */
-	public Date getSchedule() {
+	public LocalDateTime getSchedule() {
 		return schedule;
 	}
-	
-	// TODO add local date time
 	
 	/**
 	 * Returns schedule delay, if any.
