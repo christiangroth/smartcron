@@ -2,8 +2,8 @@ package de.chrgroth.smartcron;
 
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.Timer;
-import java.util.WeakHashMap;
 
 import de.chrgroth.smartcron.api.SmartcronTask;
 
@@ -16,11 +16,11 @@ import de.chrgroth.smartcron.api.SmartcronTask;
 public class Smartcrons {
 	
 	private final Timer timer;
-	private final WeakHashMap<Smartcron, Boolean> smartcrons;
+	private final Set<Smartcron> smartcrons;
 	
 	public Smartcrons() {
 		timer = new Timer();
-		smartcrons = new WeakHashMap<>();
+		smartcrons = new HashSet<>();
 	}
 	
 	/**
@@ -29,14 +29,20 @@ public class Smartcrons {
 	 * @param task
 	 *            task to be scheduled
 	 */
+	// TODO no valid statistics before first run!
 	public void schedule(SmartcronTask task) {
+		
+		// null guard
+		if (task == null) {
+			return;
+		}
 		
 		// create internal smartcron object living in timer task instances
 		Smartcron smartcron = new Smartcron(task);
-		smartcrons.put(smartcron, Boolean.TRUE);
+		smartcrons.add(smartcron);
 		
 		// execute now
-		SmartcronTimerTask timerTask = new SmartcronTimerTask(timer, smartcron);
+		SmartcronTimerTask timerTask = new SmartcronTimerTask(timer, smartcrons, smartcron);
 		timer.schedule(timerTask, new Date());
 	}
 	
@@ -46,11 +52,7 @@ public class Smartcrons {
 	 * @return schedules tasks
 	 */
 	public HashSet<Smartcron> getScheduledTasks() {
-		
-		// TODO why do we need this??!?
-		System.gc();
-		
-		return new HashSet<Smartcron>(smartcrons.keySet());
+		return new HashSet<Smartcron>(smartcrons);
 	}
 	
 	/**

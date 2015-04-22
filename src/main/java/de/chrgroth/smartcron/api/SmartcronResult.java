@@ -37,6 +37,13 @@ public class SmartcronResult {
 	 * @return execution object
 	 */
 	public static SmartcronResult DELAY(long delay) {
+		
+		// validate delay
+		if (delay < 1) {
+			throw new IllegalArgumentException("delay must be >= 1ms!!");
+		}
+		
+		// create
 		return new SmartcronResult(Mode.DELAY, null, delay);
 	}
 	

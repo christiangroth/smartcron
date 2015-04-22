@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -24,10 +25,12 @@ public class SmartcronTimerTask extends TimerTask {
 	private static final Logger LOG = LoggerFactory.getLogger(SmartcronTimerTask.class);
 	
 	private final Timer timer;
+	private final Set<Smartcron> smartcrons;
 	private final Smartcron smartcron;
 	
-	public SmartcronTimerTask(Timer timer, Smartcron smartcron) {
+	public SmartcronTimerTask(Timer timer, Set<Smartcron> smartcrons, Smartcron smartcron) {
 		this.timer = timer;
+		this.smartcrons = smartcrons;
 		this.smartcron = smartcron;
 	}
 	
@@ -38,6 +41,7 @@ public class SmartcronTimerTask extends TimerTask {
 		// abort if no follow up is needed
 		SmartcronResult result = executeTask();
 		if (result == null || result.getMode() == Mode.ABORT) {
+			smartcrons.remove(smartcron);
 			return;
 		}
 		
@@ -47,9 +51,14 @@ public class SmartcronTimerTask extends TimerTask {
 			
 			// reschedule
 			// TODO reschedule error handling
-			Instant instant = nextExecutionDate.atZone(ZoneId.systemDefault()).toInstant();
-			timer.schedule(new SmartcronTimerTask(timer, smartcron), Date.from(instant));
-			smartcron.setNextExecution(nextExecutionDate);
+			try {
+				Instant instant = nextExecutionDate.atZone(ZoneId.systemDefault()).toInstant();
+				timer.schedule(new SmartcronTimerTask(timer, smartcrons, smartcron), Date.from(instant));
+				smartcron.setNextExecution(nextExecutionDate);
+			} catch (Exception e) {
+				LOG.error("smartcron rescheduling failed for " + smartcron.getTask().getClass().getName() + ": " + e.getMessage(), e);
+				smartcrons.remove(smartcron);
+			}
 		}
 	}
 	
@@ -61,7 +70,7 @@ public class SmartcronTimerTask extends TimerTask {
 			result = smartcron.getTask().run();
 			smartcron.incExecutions();
 		} catch (Exception e) {
-			LOG.error("aborting task rescheduling " + smartcron.getTask().getClass().getName() + " due to uncaught exception: " + e.getMessage(), e);
+			LOG.error("smartcron task crashed, no further executions will be planned: " + e.getMessage(), e);
 		}
 		
 		// done
