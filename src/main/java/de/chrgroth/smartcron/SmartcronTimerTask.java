@@ -50,7 +50,6 @@ public class SmartcronTimerTask extends TimerTask {
 		if (nextExecutionDate != null) {
 			
 			// reschedule
-			// TODO reschedule error handling
 			try {
 				Instant instant = nextExecutionDate.atZone(ZoneId.systemDefault()).toInstant();
 				timer.schedule(new SmartcronTimerTask(timer, smartcrons, smartcron), Date.from(instant));

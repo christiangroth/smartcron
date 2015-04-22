@@ -26,6 +26,13 @@ public class SmartcronResult {
 	 * @return execution object
 	 */
 	public static SmartcronResult SCHEDULE(LocalDateTime schedule) {
+		
+		// validate schedule
+		if (schedule == null) {
+			throw new IllegalArgumentException("schedule must not be null!!");
+		}
+		
+		// create
 		return new SmartcronResult(Mode.SCHEDULE, schedule, 0l);
 	}
 	

@@ -1,5 +1,7 @@
 package de.chrgroth.smartcron;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
@@ -99,19 +101,52 @@ public class SmartcronsTest {
 		await().until(taskCalled(1));
 	}
 	
-	// TODO dateExecution
-	// TODO dateExecution error cases
+	@Test(expected = IllegalArgumentException.class)
+	public void nullSCheduleDelay() {
+		SmartcronResult.SCHEDULE(null);
+	}
+	
+	@Test
+	public void pastScheduleResult() {
+		
+		// check execution of scheduled task, past schedule means direct execution
+		task.execution = SmartcronResult.SCHEDULE(LocalDateTime.now().minusSeconds(10));
+		schedule();
+		Assert.assertEquals(1, smartcrons.getScheduledTasks().size());
+		
+		// stop executions explicitly
+		smartcrons.shutdown();
+	}
+	
+	@Test
+	public void scheduleResult() {
+		
+		// create task rescheduling at now + 50ms using time API
+		task = new CounterTask() {
+			@Override
+			public SmartcronResult run() {
+				super.run();
+				return SmartcronResult.SCHEDULE(LocalDateTime.now().plus(50, ChronoUnit.MILLIS));
+			}
+		};
+		
+		// check execution of scheduled task
+		schedule();
+		for (int i = 1; i < 6; i++) {
+			Assert.assertEquals(1, smartcrons.getScheduledTasks().size());
+			await().until(taskCalled(i));
+		}
+		
+		// stop executions explicitly
+		smartcrons.shutdown();
+	}
 	
 	private void schedule() {
 		smartcrons.schedule(task);
 	}
 	
 	private ConditionFactory await() {
-		return await(new Duration(10, TimeUnit.MILLISECONDS));
-	}
-	
-	private ConditionFactory await(Duration poll) {
-		return Awaitility.await().pollInterval(poll).atMost(Duration.ONE_HUNDRED_MILLISECONDS);
+		return Awaitility.await().pollInterval(new Duration(10, TimeUnit.MILLISECONDS)).atMost(Duration.TWO_HUNDRED_MILLISECONDS);
 	}
 	
 	private Callable<Boolean> taskCalled(int count) {

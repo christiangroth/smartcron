@@ -46,6 +46,8 @@ public class Smartcrons {
 		timer.schedule(timerTask, new Date());
 	}
 	
+	// TODO abort methods
+	
 	/**
 	 * Returns all currently scheduled tasks.
 	 * 
