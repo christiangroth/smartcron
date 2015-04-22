@@ -32,6 +32,7 @@ public class SmartcronTimerTask extends TimerTask {
 		this.timer = timer;
 		this.smartcrons = smartcrons;
 		this.smartcron = smartcron;
+		smartcron.setTimerTask(this);
 	}
 	
 	// TODO optimize performance

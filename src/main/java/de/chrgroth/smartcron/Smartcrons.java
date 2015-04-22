@@ -2,6 +2,7 @@ package de.chrgroth.smartcron;
 
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.Timer;
 
@@ -39,21 +40,52 @@ public class Smartcrons {
 		
 		// create internal smartcron object living in timer task instances
 		Smartcron smartcron = new Smartcron(task);
-		smartcrons.add(smartcron);
+		synchronized (smartcrons) {
+			smartcrons.add(smartcron);
+		}
 		
 		// execute now
 		SmartcronTimerTask timerTask = new SmartcronTimerTask(timer, smartcrons, smartcron);
 		timer.schedule(timerTask, new Date());
 	}
 	
-	// TODO abort methods
+	/**
+	 * Cancels all currently schedules tasks of given type.
+	 * 
+	 * @param type
+	 *            type to be cancelled
+	 * @return all cancelled tasks, never null
+	 */
+	public Set<Smartcron> cancel(Class<? extends SmartcronTask> type) {
+		Set<Smartcron> cancelled = new HashSet<>();
+		
+		// remove and collect
+		synchronized (smartcrons) {
+			Iterator<Smartcron> iterator = smartcrons.iterator();
+			while (iterator.hasNext()) {
+				Smartcron smartcron = iterator.next();
+				if (smartcron.getTask().getClass().equals(type)) {
+					
+					// cancel timer task
+					smartcron.getTimerTask().cancel();
+					
+					// remove from internal set
+					iterator.remove();
+					cancelled.add(smartcron);
+				}
+			}
+		}
+		
+		// done
+		return cancelled;
+	}
 	
 	/**
 	 * Returns all currently scheduled tasks.
 	 * 
 	 * @return schedules tasks
 	 */
-	public HashSet<Smartcron> getScheduledTasks() {
+	public Set<Smartcron> getScheduledTasks() {
 		return new HashSet<Smartcron>(smartcrons);
 	}
 	

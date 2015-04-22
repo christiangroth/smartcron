@@ -9,10 +9,12 @@ import de.chrgroth.smartcron.api.SmartcronTask;
  * 
  * @author Christian Groth
  */
+// TODO avoid changes to this instance!!
 public class Smartcron {
 	
 	private final SmartcronTask task;
 	
+	private SmartcronTimerTask timerTask;
 	private int executions;
 	private LocalDateTime nextExecution;
 	
@@ -22,6 +24,14 @@ public class Smartcron {
 	
 	public SmartcronTask getTask() {
 		return task;
+	}
+	
+	public SmartcronTimerTask getTimerTask() {
+		return timerTask;
+	}
+	
+	public void setTimerTask(SmartcronTimerTask timerTask) {
+		this.timerTask = timerTask;
 	}
 	
 	public int getExecutions() {

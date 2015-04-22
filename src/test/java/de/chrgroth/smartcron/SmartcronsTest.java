@@ -2,6 +2,7 @@ package de.chrgroth.smartcron;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
@@ -18,7 +19,7 @@ import de.chrgroth.smartcron.api.SmartcronResult;
 import de.chrgroth.smartcron.model.CounterTask;
 import de.chrgroth.smartcron.model.ExceptionTask;
 
-// TODO test metadata
+// TODO test smartcron data
 public class SmartcronsTest {
 	
 	private Smartcrons smartcrons;
@@ -141,8 +142,24 @@ public class SmartcronsTest {
 		smartcrons.shutdown();
 	}
 	
+	@Test
+	public void cancelTask() {
+		
+		// check no execution for cancelled task
+		task.execution = SmartcronResult.DELAY(1000);
+		schedule();
+		Assert.assertEquals(1, smartcrons.getScheduledTasks().size());
+		await().until(taskCalled(1));
+		Set<Smartcron> cancelled = cancel();
+		Assert.assertEquals(1, cancelled.size());
+	}
+	
 	private void schedule() {
 		smartcrons.schedule(task);
+	}
+	
+	private Set<Smartcron> cancel() {
+		return smartcrons.cancel(task.getClass());
 	}
 	
 	private ConditionFactory await() {
