@@ -143,7 +143,12 @@ public class SmartcronsTest {
 	}
 	
 	@Test
-	public void cancelTask() {
+	public void nullCancel() {
+		smartcrons.cancel(null);
+	}
+	
+	@Test
+	public void taskCancel() {
 		
 		// check no execution for cancelled task
 		task.execution = SmartcronResult.DELAY(1000);
