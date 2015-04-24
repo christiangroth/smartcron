@@ -5,19 +5,82 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.Timer;
+import java.util.TimerTask;
+import java.util.stream.Collectors;
 
-import de.chrgroth.smartcron.api.SmartcronTask;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import de.chrgroth.smartcron.api.Smartcron;
 
 /**
- * Allows to control {@link SmartcronTask} instances. A new task is scheduled using {@link #schedule(SmartcronTask)}. Before application
+ * Allows to control {@link Smartcron} instances. A new smartcron is scheduled using {@link #schedule(Smartcron)}. Before application
  * shutdown {@link #shutdown()} may be used to cleanup all running instances.
  * 
  * @author Christian Groth
  */
 public class Smartcrons {
+	private static final Logger LOG = LoggerFactory.getLogger(Smartcrons.class);
+	
+	private final class SmartcronTimer extends TimerTask {
+		
+		private final Smartcron smartcron;
+		private int executions;
+		private Date nextExecution;
+		
+		private SmartcronTimer(Smartcron smartcron) {
+			this(smartcron, 0, null);
+		}
+		
+		private SmartcronTimer(SmartcronTimer other) {
+			this(other.smartcron, other.executions, other.nextExecution);
+		}
+		
+		private SmartcronTimer(Smartcron smartcron, int executions, Date nextExecution) {
+			this.smartcron = smartcron;
+			this.executions = executions;
+			this.nextExecution = nextExecution;
+		}
+		
+		public boolean isOfType(Class<? extends Smartcron> type) {
+			return smartcron.getClass().equals(type);
+		}
+		
+		public SmartcronMetadata cretaeMetadata() {
+			return new SmartcronMetadata(smartcron, executions, nextExecution);
+		}
+		
+		@Override
+		public void run() {
+			
+			// execute
+			nextExecution = null;
+			try {
+				nextExecution = smartcron.run();
+				executions++;
+			} catch (Exception e) {
+				LOG.error("smartcron " + smartcron.getClass().getName() + " crashed, no further executions will be planned: " + e.getMessage(), e);
+			}
+			
+			// abort if no follow up is needed
+			if (nextExecution == null) {
+				smartcrons.remove(this);
+				return;
+			}
+			
+			// schedule next execution
+			try {
+				timer.schedule(new SmartcronTimer(this), nextExecution);
+			} catch (Exception e) {
+				LOG.error("rescheduling failed for smartcron " + smartcron.getClass().getName() + ": " + e.getMessage(), e);
+				smartcrons.remove(this);
+			}
+		}
+		
+	}
 	
 	private final Timer timer;
-	private final Set<Smartcron> smartcrons;
+	private final Set<SmartcronTimer> smartcrons;
 	
 	public Smartcrons() {
 		timer = new Timer();
@@ -25,53 +88,52 @@ public class Smartcrons {
 	}
 	
 	/**
-	 * Starts execution of given task immediately. All further executions depend on tasks return value.
+	 * Starts execution of given smartcron immediately. All further executions depend on smartcrons return value.
 	 * 
-	 * @param task
-	 *            task to be scheduled
+	 * @param smartcron
+	 *            smartcron to be scheduled
 	 */
-	// TODO no valid statistics before first run!
-	public void schedule(SmartcronTask task) {
+	public void schedule(Smartcron smartcron) {
 		
 		// null guard
-		if (task == null) {
+		if (smartcron == null) {
 			return;
 		}
 		
-		// create internal smartcron object living in timer task instances
-		Smartcron smartcron = new Smartcron(task);
+		// create timer
+		SmartcronTimer timerTask = new SmartcronTimer(smartcron);
 		synchronized (smartcrons) {
-			smartcrons.add(smartcron);
+			smartcrons.add(timerTask);
 		}
 		
 		// execute now
-		SmartcronTimerTask timerTask = new SmartcronTimerTask(timer, smartcrons, smartcron);
 		timer.schedule(timerTask, new Date());
 	}
 	
 	/**
-	 * Cancels all currently schedules tasks of given type.
+	 * Cancels all currently scheduled scmartcrons of given type. Returned metadata will still contain next scheduling date although timer
+	 * was cancelled.
 	 * 
 	 * @param type
 	 *            type to be cancelled
-	 * @return all cancelled tasks, never null
+	 * @return metadata for all cancelled smartcrons, never null
 	 */
-	public Set<Smartcron> cancel(Class<? extends SmartcronTask> type) {
-		Set<Smartcron> cancelled = new HashSet<>();
+	public Set<SmartcronMetadata> cancel(Class<? extends Smartcron> type) {
+		Set<SmartcronMetadata> cancelled = new HashSet<>();
 		
 		// remove and collect
 		synchronized (smartcrons) {
-			Iterator<Smartcron> iterator = smartcrons.iterator();
+			Iterator<SmartcronTimer> iterator = smartcrons.iterator();
 			while (iterator.hasNext()) {
-				Smartcron smartcron = iterator.next();
-				if (smartcron.getTask().getClass().equals(type)) {
+				SmartcronTimer timerTask = iterator.next();
+				if (timerTask.isOfType(type)) {
 					
-					// cancel timer task
-					smartcron.getTimerTask().cancel();
+					// cancel smartcron
+					timerTask.cancel();
 					
 					// remove from internal set
 					iterator.remove();
-					cancelled.add(smartcron);
+					cancelled.add(timerTask.cretaeMetadata());
 				}
 			}
 		}
@@ -81,16 +143,16 @@ public class Smartcrons {
 	}
 	
 	/**
-	 * Returns all currently scheduled tasks.
+	 * Returns metadata about all currently scheduled smartcrons.
 	 * 
-	 * @return schedules tasks
+	 * @return metadata, never null
 	 */
-	public Set<Smartcron> getScheduledTasks() {
-		return new HashSet<Smartcron>(smartcrons);
+	public Set<SmartcronMetadata> getMetadata() {
+		return new HashSet<>(smartcrons).stream().map(s -> s.cretaeMetadata()).collect(Collectors.toSet());
 	}
 	
 	/**
-	 * Cancels all scheduled tasks.
+	 * Cancels all scheduled smartcrons.
 	 */
 	public void shutdown() {
 		timer.cancel();

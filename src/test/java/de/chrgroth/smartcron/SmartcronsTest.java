@@ -1,7 +1,6 @@
 package de.chrgroth.smartcron;
 
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
+import java.util.Date;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -15,127 +14,68 @@ import com.jayway.awaitility.Awaitility;
 import com.jayway.awaitility.Duration;
 import com.jayway.awaitility.core.ConditionFactory;
 
-import de.chrgroth.smartcron.api.SmartcronResult;
-import de.chrgroth.smartcron.model.CounterTask;
-import de.chrgroth.smartcron.model.ExceptionTask;
+import de.chrgroth.smartcron.api.Smartcron;
+import de.chrgroth.smartcron.model.Counter;
 
-// TODO test smartcron data
 public class SmartcronsTest {
 	
 	private Smartcrons smartcrons;
-	private CounterTask task;
+	private Counter counter;
 	
 	@Before
 	public void setUp() {
 		smartcrons = new Smartcrons();
-		task = new CounterTask();
 		
 		// assert clean start
-		Assert.assertEquals(0, task.counter);
-		noPendingTasks();
+		noPendingSmartcrons();
 	}
 	
 	@Test
-	public void nullTask() {
+	public void scheduleNull() {
 		smartcrons.schedule(null);
 	}
 	
 	@Test
-	public void exceptionTask() {
-		smartcrons.schedule(new ExceptionTask());
-	}
-	
-	@Test
-	public void nullResult() {
-		
-		// check execution of scheduled task
-		task.execution = null;
-		schedule();
-		await().until(taskCalled(1));
-	}
-	
-	@Test
-	public void abortResult() {
-		
-		// check execution of scheduled task
-		task.execution = SmartcronResult.ABORT();
-		schedule();
-		await().until(taskCalled(1));
-	}
-	
-	@Test(expected = IllegalArgumentException.class)
-	public void zeroDelay() {
-		SmartcronResult.DELAY(0);
-	}
-	
-	@Test(expected = IllegalArgumentException.class)
-	public void negativeDelay() {
-		SmartcronResult.DELAY(-1);
-	}
-	
-	@Test(expected = IllegalArgumentException.class)
-	public void negativeMinDelay() {
-		SmartcronResult.DELAY(Long.MIN_VALUE);
-	}
-	
-	@Test
-	public void delayResult() {
-		
-		// check execution of scheduled task
-		task.execution = SmartcronResult.DELAY(50);
-		schedule();
-		for (int i = 1; i < 6; i++) {
-			Assert.assertEquals(1, smartcrons.getScheduledTasks().size());
-			await().until(taskCalled(i));
-		}
-		
-		// stop executions explicitly
-		smartcrons.shutdown();
-	}
-	
-	@Test
-	public void delayOverflowResult() throws Exception {
-		
-		// check single execution of scheduled task
-		task.execution = SmartcronResult.DELAY(Long.MAX_VALUE);
-		schedule();
-		await().until(taskCalled(1));
-	}
-	
-	@Test(expected = IllegalArgumentException.class)
-	public void nullSCheduleDelay() {
-		SmartcronResult.SCHEDULE(null);
-	}
-	
-	@Test
-	public void pastScheduleResult() {
-		
-		// check execution of scheduled task, past schedule means direct execution
-		task.execution = SmartcronResult.SCHEDULE(LocalDateTime.now().minusSeconds(10));
-		schedule();
-		Assert.assertEquals(1, smartcrons.getScheduledTasks().size());
-		
-		// stop executions explicitly
-		smartcrons.shutdown();
-	}
-	
-	@Test
-	public void scheduleResult() {
-		
-		// create task rescheduling at now + 50ms using time API
-		task = new CounterTask() {
+	public void scheduleException() {
+		smartcrons.schedule(new Smartcron() {
+			
 			@Override
-			public SmartcronResult run() {
-				super.run();
-				return SmartcronResult.SCHEDULE(LocalDateTime.now().plus(50, ChronoUnit.MILLIS));
+			public Date run() {
+				throw new IllegalStateException("expected test exception.");
+			}
+		});
+	}
+	
+	@Test
+	public void nextExecutionNull() {
+		
+		// check execution
+		counter = new Counter() {
+			
+			@Override
+			protected Date calc() {
+				return null;
 			}
 		};
+		schedule();
+		await().until(counterCalled(1));
+	}
+	
+	@Test
+	public void nextExecutionDlay() {
 		
-		// check execution of scheduled task
+		// check execution
+		counter = new Counter() {
+			
+			@Override
+			protected Date calc() {
+				return delay(50);
+			}
+		};
 		schedule();
 		for (int i = 1; i < 6; i++) {
-			Assert.assertEquals(1, smartcrons.getScheduledTasks().size());
-			await().until(taskCalled(i));
+			Assert.assertEquals(1, smartcrons.getMetadata().size());
+			await().until(counterCalled(i));
 		}
 		
 		// stop executions explicitly
@@ -143,53 +83,92 @@ public class SmartcronsTest {
 	}
 	
 	@Test
-	public void nullCancel() {
+	public void nextExecutionDelayOverflow() throws Exception {
+		
+		// check single execution
+		counter = new Counter() {
+			
+			@Override
+			protected Date calc() {
+				return delay(Long.MAX_VALUE);
+			}
+		};
+		schedule();
+		await().until(counterCalled(1));
+	}
+	
+	@Test
+	public void nextExecutionPastDate() {
+		
+		// check execution, past schedule date means direct execution
+		counter = new Counter() {
+			
+			@Override
+			protected Date calc() {
+				return new Date(System.currentTimeMillis() - 10000);
+			}
+		};
+		schedule();
+		Assert.assertEquals(1, smartcrons.getMetadata().size());
+		
+		// stop executions explicitly
+		smartcrons.shutdown();
+	}
+	
+	@Test
+	public void cancelNull() {
 		smartcrons.cancel(null);
 	}
 	
 	@Test
-	public void taskCancel() {
+	public void cancelSmartcron() {
 		
-		// check no execution for cancelled task
-		task.execution = SmartcronResult.DELAY(1000);
+		// check no execution
+		counter = new Counter() {
+			
+			@Override
+			protected Date calc() {
+				return delay(50);
+			}
+		};
 		schedule();
-		Assert.assertEquals(1, smartcrons.getScheduledTasks().size());
-		await().until(taskCalled(1));
-		Set<Smartcron> cancelled = cancel();
+		Assert.assertEquals(1, smartcrons.getMetadata().size());
+		await().until(counterCalled(1));
+		Set<SmartcronMetadata> cancelled = cancel();
 		Assert.assertEquals(1, cancelled.size());
 	}
 	
 	private void schedule() {
-		smartcrons.schedule(task);
+		smartcrons.schedule(counter);
 	}
 	
-	private Set<Smartcron> cancel() {
-		return smartcrons.cancel(task.getClass());
+	private Set<SmartcronMetadata> cancel() {
+		return smartcrons.cancel(counter.getClass());
 	}
 	
 	private ConditionFactory await() {
 		return Awaitility.await().pollInterval(new Duration(10, TimeUnit.MILLISECONDS)).atMost(Duration.TWO_HUNDRED_MILLISECONDS);
 	}
 	
-	private Callable<Boolean> taskCalled(int count) {
+	private Callable<Boolean> counterCalled(int count) {
 		return new Callable<Boolean>() {
 			@Override
 			public Boolean call() throws Exception {
-				return task.counter == count;
+				return counter.counter == count;
 			}
 		};
 	}
 	
 	@After
 	public void tearDown() {
-		noPendingTasks();
+		noPendingSmartcrons();
 	}
 	
-	private void noPendingTasks() {
+	private void noPendingSmartcrons() {
 		await().until(new Callable<Boolean>() {
 			@Override
 			public Boolean call() throws Exception {
-				return smartcrons.getScheduledTasks().isEmpty();
+				return smartcrons.getMetadata().isEmpty();
 			}
 		});
 	}
