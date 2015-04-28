@@ -7,7 +7,7 @@ import de.chrgroth.smartcron.api.Smartcron;
 /**
  * Immutable metadata about smartcron instances.
  * 
- * @author cgroth
+ * @author Christian Groth
  */
 public class SmartcronMetadata {
 	

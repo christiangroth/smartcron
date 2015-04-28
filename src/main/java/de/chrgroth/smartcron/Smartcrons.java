@@ -110,6 +110,8 @@ public class Smartcrons {
 		timer.schedule(timerTask, new Date());
 	}
 	
+	// TODO cancel a single instance from outside (not per type!)
+	
 	/**
 	 * Cancels all currently scheduled scmartcrons of given type. Returned metadata will still contain next scheduling date although timer
 	 * was cancelled.
