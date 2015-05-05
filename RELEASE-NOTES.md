@@ -3,7 +3,7 @@ Release Notes
 
 0.2.0 (in progress)
 -------------------
-- including java debug informations
+- including java debug information
 - ...
 
 0.1.0
