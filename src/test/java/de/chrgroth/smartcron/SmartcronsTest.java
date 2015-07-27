@@ -1,5 +1,6 @@
 package de.chrgroth.smartcron;
 
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -38,11 +39,11 @@ public class SmartcronsTest {
 	@Test
 	public void scheduleException() {
 		smartcrons.schedule(new Smartcron() {
-			
-			@Override
-			public Date run() {
-				throw new IllegalStateException("expected test exception.");
-			}
+		
+		@Override
+		public Date run() {
+			throw new IllegalStateException("expected test exception.");
+		}
 		});
 	}
 	
@@ -51,11 +52,11 @@ public class SmartcronsTest {
 		
 		// check execution
 		counter = new Counter() {
-			
-			@Override
-			protected Date calc() {
-				return null;
-			}
+		
+		@Override
+		protected Date calc() {
+			return null;
+		}
 		};
 		schedule();
 		await().until(counterCalled(1));
@@ -66,16 +67,16 @@ public class SmartcronsTest {
 		
 		// check execution
 		counter = new Counter() {
-			
-			@Override
-			protected Date calc() {
-				return delay(50);
-			}
+		
+		@Override
+		protected Date calc() {
+			return delay(50, ChronoUnit.MILLIS);
+		}
 		};
 		schedule();
 		for (int i = 1; i < 6; i++) {
-			Assert.assertEquals(1, smartcrons.getMetadata().size());
-			await().until(counterCalled(i));
+		Assert.assertEquals(1, smartcrons.getMetadata().size());
+		await().until(counterCalled(i));
 		}
 		
 		// stop executions explicitly
@@ -87,11 +88,11 @@ public class SmartcronsTest {
 		
 		// check single execution
 		counter = new Counter() {
-			
-			@Override
-			protected Date calc() {
-				return delay(Long.MAX_VALUE);
-			}
+		
+		@Override
+		protected Date calc() {
+			return delay(Long.MAX_VALUE, ChronoUnit.MILLIS);
+		}
 		};
 		schedule();
 		await().until(counterCalled(1));
@@ -102,11 +103,11 @@ public class SmartcronsTest {
 		
 		// check execution, past schedule date means direct execution
 		counter = new Counter() {
-			
-			@Override
-			protected Date calc() {
-				return new Date(System.currentTimeMillis() - 10000);
-			}
+		
+		@Override
+		protected Date calc() {
+			return new Date(System.currentTimeMillis() - 10000);
+		}
 		};
 		schedule();
 		Assert.assertEquals(1, smartcrons.getMetadata().size());
@@ -125,11 +126,11 @@ public class SmartcronsTest {
 		
 		// check no execution
 		counter = new Counter() {
-			
-			@Override
-			protected Date calc() {
-				return delay(50);
-			}
+		
+		@Override
+		protected Date calc() {
+			return delay(50, ChronoUnit.MILLIS);
+		}
 		};
 		schedule();
 		Assert.assertEquals(1, smartcrons.getMetadata().size());
@@ -152,10 +153,10 @@ public class SmartcronsTest {
 	
 	private Callable<Boolean> counterCalled(int count) {
 		return new Callable<Boolean>() {
-			@Override
-			public Boolean call() throws Exception {
-				return counter.counter == count;
-			}
+		@Override
+		public Boolean call() throws Exception {
+			return counter.counter == count;
+		}
 		};
 	}
 	
@@ -166,10 +167,10 @@ public class SmartcronsTest {
 	
 	private void noPendingSmartcrons() {
 		await().until(new Callable<Boolean>() {
-			@Override
-			public Boolean call() throws Exception {
-				return smartcrons.getMetadata().isEmpty();
-			}
+		@Override
+		public Boolean call() throws Exception {
+			return smartcrons.getMetadata().isEmpty();
+		}
 		});
 	}
 }

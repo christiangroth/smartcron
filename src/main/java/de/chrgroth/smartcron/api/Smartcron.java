@@ -1,6 +1,9 @@
 package de.chrgroth.smartcron.api;
 
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
+
+import de.chrgroth.smartcron.util.ChronoUnitUtils;
 
 /**
  * Base interface to implement smartcron with dynamic scheduling.
@@ -26,18 +29,19 @@ public interface Smartcron {
 	}
 	
 	/**
-	 * Computes next execution date using given delay in milliseconds.
+	 * Computes next execution date using given delay in milliseconds. Only units from {@link ChronoUnit#WEEKS} {@link ChronoUnit#MILLIS} are
+	 * accepted, {@link IllegalArgumentException} is thrown otherwise.
 	 * 
 	 * @return computed next execution date
 	 */
-	default Date delay(long delay) {
+	default Date delay(long delay, ChronoUnit unit) {
 		
 		// validate delay
 		if (delay < 1) {
-			throw new IllegalArgumentException("delay must be >= 1ms!!");
+		throw new IllegalArgumentException("delay must be >= 1ms!!");
 		}
 		
 		// compute date
-		return new Date(System.currentTimeMillis() + delay);
+		return new Date(System.currentTimeMillis() + delay * ChronoUnitUtils.toMillis(delay, unit));
 	}
 }

@@ -1,5 +1,6 @@
 package de.chrgroth.smartcron;
 
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
 import org.junit.Assert;
@@ -15,11 +16,11 @@ public class SmartcronTest {
 	@Before
 	public void setUp() {
 		smartcron = new Smartcron() {
-			
-			@Override
-			public Date run() {
-				return null;
-			}
+		
+		@Override
+		public Date run() {
+			return null;
+		}
 		};
 	}
 	
@@ -30,16 +31,16 @@ public class SmartcronTest {
 	
 	@Test(expected = IllegalArgumentException.class)
 	public void nextExecutionZeroDelay() {
-		smartcron.delay(0);
+		smartcron.delay(0, ChronoUnit.MILLIS);
 	}
 	
 	@Test(expected = IllegalArgumentException.class)
 	public void nextExecutionNegativeDelay() {
-		smartcron.delay(-1);
+		smartcron.delay(-1, ChronoUnit.MILLIS);
 	}
 	
 	@Test(expected = IllegalArgumentException.class)
 	public void nextExecutionNegativeMinDelay() {
-		smartcron.delay(Long.MIN_VALUE);
+		smartcron.delay(Long.MIN_VALUE, ChronoUnit.MILLIS);
 	}
 }
