@@ -94,7 +94,6 @@ public class SmartcronsTest {
 		
 		@Override
 		protected Date calc() {
-			System.out.println("count: " + counter);
 			return delay(Long.MAX_VALUE, ChronoUnit.MILLIS);
 		}
 		};
