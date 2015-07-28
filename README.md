@@ -42,14 +42,14 @@ Result of invoked smartcron method is the next schedule date. You may calculate 
 		}
 		
 		// next in 200ms
-		return delay(200);
+		return delay(200, ChronoUnit.MILLIS);
 	}
 
 In case the implemented smartcron throws any exception, execution will be aborted too.
 
 Scheduling smartcron instances is done using an instance of Smartcrons:
 
-	// create new controlling instance (only one)
+	// create new controlling instance (only once)
 	Smartcrons smartcrons = new Smartcrons();
 	
 	// schedule new smartcron
