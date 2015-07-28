@@ -1,7 +1,10 @@
 package de.chrgroth.smartcron;
 
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -59,24 +62,24 @@ public class SmartcronsTest {
 		}
 		};
 		schedule();
-		await().until(counterCalled(1));
+		await().until(counterCalled(1, true));
 	}
 	
 	@Test
-	public void nextExecutionDlay() {
+	public void nextExecutionDelay() {
 		
 		// check execution
 		counter = new Counter() {
 		
 		@Override
 		protected Date calc() {
-			return delay(50, ChronoUnit.MILLIS);
+			return delay(10, ChronoUnit.MILLIS);
 		}
 		};
 		schedule();
 		for (int i = 1; i < 6; i++) {
 		Assert.assertEquals(1, smartcrons.getMetadata().size());
-		await().until(counterCalled(i));
+		await().until(counterCalled(i, false));
 		}
 		
 		// stop executions explicitly
@@ -91,11 +94,15 @@ public class SmartcronsTest {
 		
 		@Override
 		protected Date calc() {
+			System.out.println("count: " + counter);
 			return delay(Long.MAX_VALUE, ChronoUnit.MILLIS);
 		}
 		};
 		schedule();
-		await().until(counterCalled(1));
+		await().until(counterCalled(1, false));
+		
+		// stop executions explicitly
+		smartcrons.shutdown();
 	}
 	
 	@Test
@@ -134,9 +141,43 @@ public class SmartcronsTest {
 		};
 		schedule();
 		Assert.assertEquals(1, smartcrons.getMetadata().size());
-		await().until(counterCalled(1));
+		await().until(counterCalled(1, true));
 		Set<SmartcronMetadata> cancelled = cancel();
 		Assert.assertEquals(1, cancelled.size());
+	}
+	
+	@Test
+	public void metadataUpdatedPerIteration() {
+		List<SmartcronMetadata> metadataInstances = new ArrayList<>();
+		
+		// schedule smartcron
+		counter = new Counter() {
+		@Override
+		protected Date calc() {
+			metadataInstances.add(smartcrons.getMetadata().iterator().next());
+			int diff = 5 - counter;
+			if (diff > 0) {
+				return delay(25, ChronoUnit.MILLIS);
+			} else {
+				return abort();
+			}
+		}
+		};
+		schedule();
+		
+		// wait to finish
+		Awaitility.await().pollInterval(250, TimeUnit.MILLISECONDS).atMost(Duration.FIVE_SECONDS).until(new Callable<Boolean>() {
+		@Override
+		public Boolean call() throws Exception {
+			boolean empty = smartcrons.getMetadata().isEmpty();
+			return empty;
+		}
+		});
+		
+		// assert no identical instances
+		Set<SmartcronMetadata> uniqueInstances = new HashSet<>();
+		uniqueInstances.addAll(metadataInstances);
+		Assert.assertEquals(metadataInstances.size(), uniqueInstances.size());
 	}
 	
 	private void schedule() {
@@ -151,11 +192,11 @@ public class SmartcronsTest {
 		return Awaitility.await().pollInterval(new Duration(10, TimeUnit.MILLISECONDS)).atMost(Duration.TWO_HUNDRED_MILLISECONDS);
 	}
 	
-	private Callable<Boolean> counterCalled(int count) {
+	private Callable<Boolean> counterCalled(int count, boolean exact) {
 		return new Callable<Boolean>() {
 		@Override
 		public Boolean call() throws Exception {
-			return counter.counter == count;
+			return exact ? counter.counter == count : counter.counter >= count;
 		}
 		};
 	}

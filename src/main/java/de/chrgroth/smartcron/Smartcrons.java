@@ -69,11 +69,14 @@ public class Smartcrons {
 		}
 		
 		// schedule next execution
+		smartcrons.remove(this);
+		SmartcronTimer newTimer = new SmartcronTimer(this);
+		smartcrons.add(newTimer);
 		try {
-			timer.schedule(new SmartcronTimer(this), nextExecution);
+			timer.schedule(newTimer, nextExecution);
 		} catch (Exception e) {
 			LOG.error("rescheduling failed for smartcron " + smartcron.getClass().getName() + ": " + e.getMessage(), e);
-			smartcrons.remove(this);
+			smartcrons.remove(newTimer);
 		}
 		}
 		
