@@ -179,6 +179,39 @@ public class SmartcronsTest {
 		Assert.assertEquals(metadataInstances.size(), uniqueInstances.size());
 	}
 	
+	@Test
+	public void metadataInformation() {
+		
+		// schedule smartcron
+		counter = new Counter() {
+		@Override
+		protected Date calc() {
+			return delay(25, ChronoUnit.MILLIS);
+		}
+		};
+		schedule();
+		
+		// wait for some executions
+		Awaitility.await().pollInterval(250, TimeUnit.MILLISECONDS).atMost(Duration.FIVE_SECONDS).until(new Callable<Boolean>() {
+		@Override
+		public Boolean call() throws Exception {
+			return true;
+		}
+		});
+		
+		// get metadata by canceling instance
+		Set<SmartcronMetadata> cancelledInstances = smartcrons.cancel(counter.getClass());
+		
+		// assert metadata
+		Assert.assertNotNull(cancelledInstances);
+		Assert.assertEquals(1, cancelledInstances.size());
+		SmartcronMetadata metadata = cancelledInstances.iterator().next();
+		Assert.assertNotNull(metadata);
+		Assert.assertTrue(metadata.getExecutions() >= 1);
+		Assert.assertTrue(metadata.getNextExecution().after(new Date()));
+		Assert.assertEquals(metadata.getSmartcron(), counter);
+	}
+	
 	private void schedule() {
 		smartcrons.schedule(counter);
 	}
