@@ -32,6 +32,10 @@ public interface Smartcron {
      * Computes next execution date using given delay in milliseconds. Only units from {@link ChronoUnit#WEEKS} {@link ChronoUnit#MILLIS}
      * are accepted, {@link IllegalArgumentException} is thrown otherwise.
      *
+     * @param delay
+     *            delay value
+     * @param unit
+     *            delay unit
      * @return computed next execution date
      */
     default Date delay(long delay, ChronoUnit unit) {
