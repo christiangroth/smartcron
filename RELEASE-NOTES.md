@@ -1,8 +1,8 @@
 Release Notes
 =====================
 
-0.2.0 (in progress)
--------------------
+0.2.0
+-----
 - including java debug information
 - thread name may be provided as parameter to Smartcrons constructor
 - Smartcron delay working with ChroniUnit
