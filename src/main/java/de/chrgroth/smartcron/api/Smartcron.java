@@ -29,7 +29,7 @@ public interface Smartcron {
     }
 
     /**
-     * Computes next execution date using given delay in milliseconds. Only units from {@link ChronoUnit#WEEKS} {@link ChronoUnit#MILLIS}
+     * Computes next execution date using given delay in milliseconds. Only units from {@link ChronoUnit#WEEKS} to {@link ChronoUnit#MILLIS}
      * are accepted, {@link IllegalArgumentException} is thrown otherwise.
      *
      * @param delay
@@ -42,10 +42,10 @@ public interface Smartcron {
 
         // validate delay
         if (delay < 1) {
-            throw new IllegalArgumentException("delay must be >= 1ms!!");
+            throw new IllegalArgumentException("delay must be >= 1!!");
         }
 
         // compute date
-        return new Date(System.currentTimeMillis() + delay * ChronoUnitUtils.toMillis(delay, unit));
+        return new Date(System.currentTimeMillis() + ChronoUnitUtils.toMillis(delay, unit));
     }
 }
