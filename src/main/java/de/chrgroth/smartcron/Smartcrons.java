@@ -14,8 +14,8 @@ import org.slf4j.LoggerFactory;
 import de.chrgroth.smartcron.api.Smartcron;
 
 /**
- * Allows to control {@link Smartcron} instances. A new smartcron is scheduled using {@link #schedule(Smartcron)}. Before application
- * shutdown {@link #shutdown()} may be used to cleanup all running instances.
+ * Allows to control {@link Smartcron} instances. A new smartcron is scheduled using {@link #schedule(Smartcron)}. Before application shutdown
+ * {@link #shutdown()} may be used to cleanup all running instances.
  *
  * @author Christian Groth
  */
@@ -52,6 +52,7 @@ public class Smartcrons {
         
         @Override
         public void run() {
+            String smartcronName = smartcron.getClass().getName();
             
             // execute
             nextExecution = null;
@@ -59,28 +60,32 @@ public class Smartcrons {
                 nextExecution = smartcron.run();
                 executions++;
             } catch (Exception e) {
-                LOG.error("smartcron " + smartcron.getClass().getName() + " crashed, no further executions will be planned: "
-                        + e.getMessage(), e);
+                if (smartcron.abortOnException()) {
+                    LOG.error("smartcron " + smartcronName + " crashed: " + e.getMessage() + ". no further executions will be planned.", e);
+                } else {
+                    // TODO test
+                    LOG.warn("smartcron " + smartcronName + " crashed: " + e.getMessage() + ". trying to reover.", e);
+                    nextExecution = smartcron.recover();
+                }
             }
             
             // abort if no follow up is needed
+            smartcrons.remove(this);
             if (nextExecution == null) {
-                smartcrons.remove(this);
+                LOG.info("removing smartcron from scheduler: " + smartcronName);
                 return;
             }
             
             // schedule next execution
-            smartcrons.remove(this);
             SmartcronTimer newTimer = new SmartcronTimer(this);
             smartcrons.add(newTimer);
             try {
                 timer.schedule(newTimer, nextExecution);
             } catch (Exception e) {
-                LOG.error("rescheduling failed for smartcron " + smartcron.getClass().getName() + ": " + e.getMessage(), e);
+                LOG.error("rescheduling failed for smartcron " + smartcronName + ": " + e.getMessage(), e);
                 smartcrons.remove(newTimer);
             }
         }
-        
     }
     
     private final Timer timer;
@@ -125,8 +130,7 @@ public class Smartcrons {
     // TODO cancel a single instance from outside (not per type!)
     
     /**
-     * Cancels all currently scheduled smartcrons of given type. Returned metadata will still contain next scheduling date although timer
-     * was cancelled.
+     * Cancels all currently scheduled smartcrons of given type. Returned metadata will still contain next scheduling date although timer was cancelled.
      *
      * @param type
      *            type to be cancelled
