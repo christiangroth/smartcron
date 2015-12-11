@@ -13,8 +13,8 @@ public final class ChronoUnitUtils {
     }
 
     /**
-     * Converts the given value in given unit to milliseconds. Only units from {@link ChronoUnit#WEEKS} {@link ChronoUnit#MILLIS} are
-     * accepted, {@link IllegalArgumentException} is thrown otherwise.
+     * Converts the given value in given unit to milliseconds. Only units from {@link ChronoUnit#WEEKS} {@link ChronoUnit#MILLIS} are accepted,
+     * {@link IllegalArgumentException} is thrown otherwise.
      *
      * @param value
      *            value in unit

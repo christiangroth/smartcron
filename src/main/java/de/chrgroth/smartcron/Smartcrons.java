@@ -21,39 +21,39 @@ import de.chrgroth.smartcron.api.Smartcron;
  */
 public class Smartcrons {
     private static final Logger LOG = LoggerFactory.getLogger(Smartcrons.class);
-    
+
     private final class SmartcronTimer extends TimerTask {
-        
+
         private final Smartcron smartcron;
         private int executions;
         private Date nextExecution;
-        
+
         private SmartcronTimer(Smartcron smartcron) {
             this(smartcron, 0, null);
         }
-        
+
         private SmartcronTimer(SmartcronTimer other) {
             this(other.smartcron, other.executions, other.nextExecution);
         }
-        
+
         private SmartcronTimer(Smartcron smartcron, int executions, Date nextExecution) {
             this.smartcron = smartcron;
             this.executions = executions;
             this.nextExecution = nextExecution;
         }
-        
+
         public boolean isOfType(Class<? extends Smartcron> type) {
             return smartcron.getClass().equals(type);
         }
-        
+
         public SmartcronMetadata cretaeMetadata() {
             return new SmartcronMetadata(smartcron, executions, nextExecution);
         }
-        
+
         @Override
         public void run() {
             String smartcronName = smartcron.getClass().getName();
-            
+
             // execute
             nextExecution = null;
             try {
@@ -68,14 +68,14 @@ public class Smartcrons {
                     nextExecution = smartcron.recover();
                 }
             }
-            
+
             // abort if no follow up is needed
             smartcrons.remove(this);
             if (nextExecution == null) {
                 LOG.info("removing smartcron from scheduler: " + smartcronName);
                 return;
             }
-            
+
             // schedule next execution
             SmartcronTimer newTimer = new SmartcronTimer(this);
             smartcrons.add(newTimer);
@@ -87,14 +87,14 @@ public class Smartcrons {
             }
         }
     }
-    
+
     private final Timer timer;
     private final Set<SmartcronTimer> smartcrons;
-    
+
     public Smartcrons() {
         this(null);
     }
-    
+
     public Smartcrons(String threadName) {
         if (threadName != null && !"".equals(threadName)) {
             timer = new Timer(threadName);
@@ -103,7 +103,7 @@ public class Smartcrons {
         }
         smartcrons = new HashSet<>();
     }
-    
+
     /**
      * Starts execution of given smartcron immediately. All further executions depend on smartcrons return value.
      *
@@ -111,24 +111,24 @@ public class Smartcrons {
      *            smartcron to be scheduled
      */
     public void schedule(Smartcron smartcron) {
-        
+
         // null guard
         if (smartcron == null) {
             return;
         }
-        
+
         // create timer
         SmartcronTimer timerTask = new SmartcronTimer(smartcron);
         synchronized (smartcrons) {
             smartcrons.add(timerTask);
         }
-        
+
         // execute now
         timer.schedule(timerTask, new Date());
     }
-    
+
     // TODO cancel a single instance from outside (not per type!)
-    
+
     /**
      * Cancels all currently scheduled smartcrons of given type. Returned metadata will still contain next scheduling date although timer was cancelled.
      *
@@ -138,28 +138,28 @@ public class Smartcrons {
      */
     public Set<SmartcronMetadata> cancel(Class<? extends Smartcron> type) {
         Set<SmartcronMetadata> cancelled = new HashSet<>();
-        
+
         // remove and collect
         synchronized (smartcrons) {
             Iterator<SmartcronTimer> iterator = smartcrons.iterator();
             while (iterator.hasNext()) {
                 SmartcronTimer timerTask = iterator.next();
                 if (timerTask.isOfType(type)) {
-                    
+
                     // cancel smartcron
                     timerTask.cancel();
-                    
+
                     // remove from internal set
                     iterator.remove();
                     cancelled.add(timerTask.cretaeMetadata());
                 }
             }
         }
-        
+
         // done
         return cancelled;
     }
-    
+
     /**
      * Returns metadata about all currently scheduled smartcrons.
      *
@@ -168,7 +168,7 @@ public class Smartcrons {
     public Set<SmartcronMetadata> getMetadata() {
         return new HashSet<>(smartcrons).stream().map(s -> s.cretaeMetadata()).collect(Collectors.toSet());
     }
-    
+
     /**
      * Cancels all scheduled smartcrons.
      */
