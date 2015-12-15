@@ -3,7 +3,7 @@
 	 
 	<groupId>de.chrgroth.smartcron</groupId>
 	<artifactId>smartcron</artifactId>
-	<version>0.3.0-SNAPSHOT</version>
+	<version>0.3.0</version>
 	
 	<name>smartcron</name>
 	<description>Simple API to provide dynamic scheduling.</description>
