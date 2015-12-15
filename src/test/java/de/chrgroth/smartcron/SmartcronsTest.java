@@ -51,6 +51,40 @@ public class SmartcronsTest {
     }
 
     @Test
+    public void scheduleRecoverable() {
+        counter = new Counter() {
+
+            @Override
+            protected Date calc() {
+                return null;
+            }
+        };
+
+        smartcrons.schedule(new Smartcron() {
+
+            @Override
+            public boolean abortOnException() {
+                return false;
+            }
+
+            @Override
+            public Date recover() {
+                return delay(10, ChronoUnit.MILLIS);
+            }
+
+            @Override
+            public Date run() {
+                counter.counter++;
+                if (counter.counter == 1) {
+                    throw new IllegalStateException("expected test exception.");
+                }
+                return abort();
+            }
+        });
+        await().until(counterCalled(2, true));
+    }
+
+    @Test
     public void nextExecutionNull() {
 
         // check execution

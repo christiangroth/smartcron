@@ -19,6 +19,7 @@ import de.chrgroth.smartcron.api.Smartcron;
  *
  * @author Christian Groth
  */
+
 public class Smartcrons {
     private static final Logger LOG = LoggerFactory.getLogger(Smartcrons.class);
 
@@ -63,7 +64,6 @@ public class Smartcrons {
                 if (smartcron.abortOnException()) {
                     LOG.error("smartcron " + smartcronName + " crashed: " + e.getMessage() + ". no further executions will be planned.", e);
                 } else {
-                    // TODO test
                     LOG.warn("smartcron " + smartcronName + " crashed: " + e.getMessage() + ". trying to reover.", e);
                     nextExecution = smartcron.recover();
                 }
@@ -126,8 +126,6 @@ public class Smartcrons {
         // execute now
         timer.schedule(timerTask, new Date());
     }
-
-    // TODO cancel a single instance from outside (not per type!)
 
     /**
      * Cancels all currently scheduled smartcrons of given type. Returned metadata will still contain next scheduling date although timer was cancelled.
