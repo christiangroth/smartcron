@@ -36,4 +36,9 @@ public class SmartcronMetadata {
     public LocalDateTime getScheduled() {
         return scheduled;
     }
+
+    @Override
+    public String toString() {
+        return "SmartcronMetadata [name=" + name + ", executions=" + executions + ", scheduled=" + scheduled + "]";
+    }
 }

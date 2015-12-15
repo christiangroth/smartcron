@@ -3,6 +3,9 @@ package de.chrgroth.smartcron.api;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
+import de.chrgroth.smartcron.model.SmartcronExecution;
+import de.chrgroth.smartcron.model.SmartcronMetadata;
+
 /**
  * Base interface to implement smartcron with dynamic scheduling.
  *
@@ -16,6 +19,15 @@ public interface Smartcron {
      * @return next execution date
      */
     LocalDateTime run();
+
+    /**
+     * Tells whether all {@link SmartcronExecution} instances should be contained in {@link SmartcronMetadata}.
+     *
+     * @return true if {@link SmartcronExecution} instances should be saved, false otherwise
+     */
+    default boolean trackExecutions() {
+        return true;
+    }
 
     /**
      * Defines if smartcron execution will be aborted on uncaught exception. Overwrite to continue after uncaught exception and be sure to implement

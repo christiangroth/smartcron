@@ -86,7 +86,9 @@ public class SmartcronTimer extends TimerTask {
         }
 
         // add execution
-        executions.add(new SmartcronExecution(scheduled, started, duration, error, nextSchedule));
+        if (smartcron.trackExecutions()) {
+            executions.add(new SmartcronExecution(scheduled, started, duration, error, nextSchedule));
+        }
 
         // abort if no follow up is needed
         smartcrons.remove(this);
