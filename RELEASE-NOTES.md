@@ -3,8 +3,10 @@ Release Notes
 
 0.3.0 (in progress)
 -------------------
+- fixed bug in delay calculation
+- allowed smartcrons to be recoverable
+- enhanced smartcron metadata
 - ...
-
 
 0.2.0
 -----

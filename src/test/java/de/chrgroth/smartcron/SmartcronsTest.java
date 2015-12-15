@@ -20,6 +20,7 @@ import com.jayway.awaitility.core.ConditionFactory;
 
 import de.chrgroth.smartcron.api.Smartcron;
 import de.chrgroth.smartcron.model.Counter;
+import de.chrgroth.smartcron.model.SmartcronMetadata;
 
 public class SmartcronsTest {
 
@@ -226,7 +227,7 @@ public class SmartcronsTest {
         schedule();
 
         // wait for some executions
-        Awaitility.await().pollInterval(250, TimeUnit.MILLISECONDS).atMost(Duration.FIVE_SECONDS).until(new Callable<Boolean>() {
+        Awaitility.await().pollInterval(500, TimeUnit.MILLISECONDS).atMost(Duration.FIVE_SECONDS).until(new Callable<Boolean>() {
             @Override
             public Boolean call() throws Exception {
                 return true;
@@ -241,9 +242,20 @@ public class SmartcronsTest {
         Assert.assertEquals(1, cancelledInstances.size());
         SmartcronMetadata metadata = cancelledInstances.iterator().next();
         Assert.assertNotNull(metadata);
-        Assert.assertTrue(metadata.getExecutions() >= 1);
-        Assert.assertTrue(metadata.getNextExecution().after(new Date()));
-        Assert.assertEquals(metadata.getSmartcron(), counter);
+        Assert.assertNotNull(metadata.getScheduled());
+        Assert.assertNotNull(metadata.getExecutions());
+        Assert.assertEquals(counter.getClass().getName(), metadata.getName());
+
+        // assert executions
+        Assert.assertTrue(metadata.getExecutions().size() >= 2);
+        Assert.assertNull(metadata.getExecutions().get(0).getScheduled());
+        Assert.assertNotNull(metadata.getExecutions().get(0).getStarted());
+        Assert.assertNull(metadata.getExecutions().get(0).getError());
+        Assert.assertNotNull(metadata.getExecutions().get(0).getNextExecution());
+        Assert.assertNotNull(metadata.getExecutions().get(1).getScheduled());
+        Assert.assertNotNull(metadata.getExecutions().get(1).getStarted());
+        Assert.assertNull(metadata.getExecutions().get(1).getError());
+        Assert.assertNotNull(metadata.getExecutions().get(1).getNextExecution());
     }
 
     private void schedule() {

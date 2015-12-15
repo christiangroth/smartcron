@@ -45,7 +45,43 @@ Result of invoked smartcron method is the next schedule date. You may calculate 
 		return delay(200, ChronoUnit.MILLIS);
 	}
 
-In case the implemented smartcron throws any exception, execution will be aborted too.
+In case the implemented smartcron throws any exception, execution will be aborted too unless you marked the smartcron implementation as recoverable:
+
+	public class MySmartcron implements Smartcron {
+		
+		private int recoveries = 0;
+		
+		@Override
+		public boolean abortOnException() {
+        	return false;
+    	}
+    	
+		@Override
+		public Date recover() {
+			
+			// count
+			recoveries++;
+			
+			// decide
+			if(recoveries < 10) {
+				return delay(30, ChronoUnit.SECONDS);
+			} else if(recoveries < 20 ) {
+				return delay(180, ChronoUnit.SECONDS);
+			} else {
+	        	return abort();
+	    	}
+    	}
+    	
+		@Override
+		public Date run() {
+			
+			// do stuff ...
+			
+			return ...;
+		}
+	}
+
+As shown above you may also use some instance variables to count number of recoveries and abort after reaching a certain threshold or adapt recovery times.
 
 Scheduling smartcron instances is done using an instance of Smartcrons:
 

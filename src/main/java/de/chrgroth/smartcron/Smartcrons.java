@@ -5,13 +5,10 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.Timer;
-import java.util.TimerTask;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import de.chrgroth.smartcron.api.Smartcron;
+import de.chrgroth.smartcron.model.SmartcronMetadata;
 
 /**
  * Allows to control {@link Smartcron} instances. A new smartcron is scheduled using {@link #schedule(Smartcron)}. Before application shutdown
@@ -21,72 +18,6 @@ import de.chrgroth.smartcron.api.Smartcron;
  */
 
 public class Smartcrons {
-    private static final Logger LOG = LoggerFactory.getLogger(Smartcrons.class);
-
-    private final class SmartcronTimer extends TimerTask {
-
-        private final Smartcron smartcron;
-        private int executions;
-        private Date nextExecution;
-
-        private SmartcronTimer(Smartcron smartcron) {
-            this(smartcron, 0, null);
-        }
-
-        private SmartcronTimer(SmartcronTimer other) {
-            this(other.smartcron, other.executions, other.nextExecution);
-        }
-
-        private SmartcronTimer(Smartcron smartcron, int executions, Date nextExecution) {
-            this.smartcron = smartcron;
-            this.executions = executions;
-            this.nextExecution = nextExecution;
-        }
-
-        public boolean isOfType(Class<? extends Smartcron> type) {
-            return smartcron.getClass().equals(type);
-        }
-
-        public SmartcronMetadata cretaeMetadata() {
-            return new SmartcronMetadata(smartcron, executions, nextExecution);
-        }
-
-        @Override
-        public void run() {
-            String smartcronName = smartcron.getClass().getName();
-
-            // execute
-            nextExecution = null;
-            try {
-                nextExecution = smartcron.run();
-                executions++;
-            } catch (Exception e) {
-                if (smartcron.abortOnException()) {
-                    LOG.error("smartcron " + smartcronName + " crashed: " + e.getMessage() + ". no further executions will be planned.", e);
-                } else {
-                    LOG.warn("smartcron " + smartcronName + " crashed: " + e.getMessage() + ". trying to reover.", e);
-                    nextExecution = smartcron.recover();
-                }
-            }
-
-            // abort if no follow up is needed
-            smartcrons.remove(this);
-            if (nextExecution == null) {
-                LOG.info("removing smartcron from scheduler: " + smartcronName);
-                return;
-            }
-
-            // schedule next execution
-            SmartcronTimer newTimer = new SmartcronTimer(this);
-            smartcrons.add(newTimer);
-            try {
-                timer.schedule(newTimer, nextExecution);
-            } catch (Exception e) {
-                LOG.error("rescheduling failed for smartcron " + smartcronName + ": " + e.getMessage(), e);
-                smartcrons.remove(newTimer);
-            }
-        }
-    }
 
     private final Timer timer;
     private final Set<SmartcronTimer> smartcrons;
@@ -118,7 +49,7 @@ public class Smartcrons {
         }
 
         // create timer
-        SmartcronTimer timerTask = new SmartcronTimer(smartcron);
+        SmartcronTimer timerTask = new SmartcronTimer(timer, smartcrons, smartcron);
         synchronized (smartcrons) {
             smartcrons.add(timerTask);
         }
