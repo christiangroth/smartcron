@@ -1,7 +1,7 @@
 package de.chrgroth.smartcron.model;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -13,9 +13,9 @@ public class SmartcronMetadata {
 
     private final String name;
     private final List<SmartcronExecution> executions;
-    private final Date scheduled;
+    private final LocalDateTime scheduled;
 
-    public SmartcronMetadata(String name, List<SmartcronExecution> executions, Date scheduled) {
+    public SmartcronMetadata(String name, List<SmartcronExecution> executions, LocalDateTime scheduled) {
         this.name = name;
         this.executions = new ArrayList<>();
         if (executions != null) {
@@ -33,7 +33,7 @@ public class SmartcronMetadata {
         return executions;
     }
 
-    public Date getScheduled() {
+    public LocalDateTime getScheduled() {
         return scheduled;
     }
 }

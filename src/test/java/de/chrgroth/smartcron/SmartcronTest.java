@@ -1,7 +1,7 @@
 package de.chrgroth.smartcron;
 
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Date;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -18,7 +18,7 @@ public class SmartcronTest {
         smartcron = new Smartcron() {
 
             @Override
-            public Date run() {
+            public LocalDateTime run() {
                 return null;
             }
         };

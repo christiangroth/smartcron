@@ -1,5 +1,8 @@
 package de.chrgroth.smartcron;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -26,17 +29,17 @@ public class SmartcronTimer extends TimerTask {
     private final Set<SmartcronTimer> smartcrons;
     private final Smartcron smartcron;
     private final List<SmartcronExecution> executions;
-    private final Date scheduled;
+    private final LocalDateTime scheduled;
 
     SmartcronTimer(Timer timer, Set<SmartcronTimer> smartcrons, Smartcron smartcron) {
         this(timer, smartcrons, smartcron, null, null);
     }
 
-    private SmartcronTimer(SmartcronTimer other, Date nextSchedule) {
+    private SmartcronTimer(SmartcronTimer other, LocalDateTime nextSchedule) {
         this(other.timer, other.smartcrons, other.smartcron, other.executions, nextSchedule);
     }
 
-    private SmartcronTimer(Timer timer, Set<SmartcronTimer> smartcrons, Smartcron smartcron, List<SmartcronExecution> executions, Date scheduled) {
+    private SmartcronTimer(Timer timer, Set<SmartcronTimer> smartcrons, Smartcron smartcron, List<SmartcronExecution> executions, LocalDateTime scheduled) {
         this.timer = timer;
         this.smartcrons = smartcrons;
         this.smartcron = smartcron;
@@ -57,22 +60,22 @@ public class SmartcronTimer extends TimerTask {
 
         // prepare
         String smartcronName = smartcron.getClass().getName();
-        Date started = null;
+        LocalDateTime started = null;
         long duration = 0;
         String error = null;
-        Date nextSchedule = null;
+        LocalDateTime nextSchedule = null;
 
         // execute
         try {
-            started = new Date();
+            started = LocalDateTime.now();
             nextSchedule = smartcron.run();
 
             // finished successful
-            duration = System.currentTimeMillis() - started.getTime();
+            duration = ChronoUnit.MILLIS.between(started, LocalDateTime.now());
         } catch (Exception e) {
 
             // finished with error
-            duration = System.currentTimeMillis() - started.getTime();
+            duration = ChronoUnit.MILLIS.between(started, LocalDateTime.now());
             error = e.getMessage();
             if (smartcron.abortOnException()) {
                 LOG.error("smartcron " + smartcronName + " crashed: " + e.getMessage() + ". no further executions will be planned.", e);
@@ -96,7 +99,7 @@ public class SmartcronTimer extends TimerTask {
         SmartcronTimer newTimer = new SmartcronTimer(this, nextSchedule);
         smartcrons.add(newTimer);
         try {
-            timer.schedule(newTimer, nextSchedule);
+            timer.schedule(newTimer, Date.from(nextSchedule.atZone(ZoneId.systemDefault()).toInstant()));
         } catch (Exception e) {
             LOG.error("rescheduling failed for smartcron " + smartcronName + ": " + e.getMessage(), e);
             smartcrons.remove(newTimer);

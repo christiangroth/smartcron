@@ -1,8 +1,8 @@
 package de.chrgroth.smartcron;
 
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -45,7 +45,7 @@ public class SmartcronsTest {
         smartcrons.schedule(new Smartcron() {
 
             @Override
-            public Date run() {
+            public LocalDateTime run() {
                 throw new IllegalStateException("expected test exception.");
             }
         });
@@ -56,7 +56,7 @@ public class SmartcronsTest {
         counter = new Counter() {
 
             @Override
-            protected Date calc() {
+            protected LocalDateTime calc() {
                 return null;
             }
         };
@@ -69,12 +69,12 @@ public class SmartcronsTest {
             }
 
             @Override
-            public Date recover() {
+            public LocalDateTime recover() {
                 return delay(10, ChronoUnit.MILLIS);
             }
 
             @Override
-            public Date run() {
+            public LocalDateTime run() {
                 counter.counter++;
                 if (counter.counter == 1) {
                     throw new IllegalStateException("expected test exception.");
@@ -92,7 +92,7 @@ public class SmartcronsTest {
         counter = new Counter() {
 
             @Override
-            protected Date calc() {
+            protected LocalDateTime calc() {
                 return null;
             }
         };
@@ -107,7 +107,7 @@ public class SmartcronsTest {
         counter = new Counter() {
 
             @Override
-            protected Date calc() {
+            protected LocalDateTime calc() {
                 return delay(10, ChronoUnit.MILLIS);
             }
         };
@@ -128,7 +128,7 @@ public class SmartcronsTest {
         counter = new Counter() {
 
             @Override
-            protected Date calc() {
+            protected LocalDateTime calc() {
                 return delay(Long.MAX_VALUE, ChronoUnit.MILLIS);
             }
         };
@@ -146,8 +146,8 @@ public class SmartcronsTest {
         counter = new Counter() {
 
             @Override
-            protected Date calc() {
-                return new Date(System.currentTimeMillis() - 10000);
+            protected LocalDateTime calc() {
+                return LocalDateTime.now().minus(10000, ChronoUnit.MILLIS);
             }
         };
         schedule();
@@ -169,7 +169,7 @@ public class SmartcronsTest {
         counter = new Counter() {
 
             @Override
-            protected Date calc() {
+            protected LocalDateTime calc() {
                 return delay(50, ChronoUnit.MILLIS);
             }
         };
@@ -187,7 +187,7 @@ public class SmartcronsTest {
         // schedule smartcron
         counter = new Counter() {
             @Override
-            protected Date calc() {
+            protected LocalDateTime calc() {
                 metadataInstances.add(smartcrons.getMetadata().iterator().next());
                 int diff = 5 - counter;
                 if (diff > 0) {
@@ -220,7 +220,7 @@ public class SmartcronsTest {
         // schedule smartcron
         counter = new Counter() {
             @Override
-            protected Date calc() {
+            protected LocalDateTime calc() {
                 return delay(25, ChronoUnit.MILLIS);
             }
         };

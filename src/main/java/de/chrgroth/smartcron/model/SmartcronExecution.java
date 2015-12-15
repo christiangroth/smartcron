@@ -1,6 +1,6 @@
 package de.chrgroth.smartcron.model;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 /**
  * Immutable metadata about smartcron executions.
@@ -8,13 +8,13 @@ import java.util.Date;
  * @author Christian Groth
  */
 public class SmartcronExecution {
-    private final Date scheduled;
-    private final Date started;
+    private final LocalDateTime scheduled;
+    private final LocalDateTime started;
     private final long duration;
     private final String error;
-    private final Date nextExecution;
+    private final LocalDateTime nextExecution;
 
-    public SmartcronExecution(Date scheduled, Date started, long duration, String error, Date nextExecution) {
+    public SmartcronExecution(LocalDateTime scheduled, LocalDateTime started, long duration, String error, LocalDateTime nextExecution) {
         this.scheduled = scheduled;
         this.started = started;
         this.duration = duration;
@@ -22,11 +22,11 @@ public class SmartcronExecution {
         this.nextExecution = nextExecution;
     }
 
-    public Date getScheduled() {
+    public LocalDateTime getScheduled() {
         return scheduled;
     }
 
-    public Date getStarted() {
+    public LocalDateTime getStarted() {
         return started;
     }
 
@@ -38,7 +38,7 @@ public class SmartcronExecution {
         return error;
     }
 
-    public Date getNextExecution() {
+    public LocalDateTime getNextExecution() {
         return nextExecution;
     }
 

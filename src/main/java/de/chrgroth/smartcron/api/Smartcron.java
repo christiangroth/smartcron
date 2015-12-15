@@ -1,9 +1,7 @@
 package de.chrgroth.smartcron.api;
 
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Date;
-
-import de.chrgroth.smartcron.util.ChronoUnitUtils;
 
 /**
  * Base interface to implement smartcron with dynamic scheduling.
@@ -17,7 +15,7 @@ public interface Smartcron {
      *
      * @return next execution date
      */
-    Date run();
+    LocalDateTime run();
 
     /**
      * Defines if smartcron execution will be aborted on uncaught exception. Overwrite to continue after uncaught exception and be sure to implement
@@ -34,7 +32,7 @@ public interface Smartcron {
      *
      * @return date to run next execution
      */
-    default Date recover() {
+    default LocalDateTime recover() {
         return abort();
     }
 
@@ -43,13 +41,12 @@ public interface Smartcron {
      *
      * @return null to abort execution
      */
-    default Date abort() {
+    default LocalDateTime abort() {
         return null;
     }
 
     /**
-     * Computes next execution date using given delay in milliseconds. Only units from {@link ChronoUnit#WEEKS} to {@link ChronoUnit#MILLIS} are accepted,
-     * {@link IllegalArgumentException} is thrown otherwise.
+     * Computes next execution date using given delay in given unit.
      *
      * @param delay
      *            delay value
@@ -57,7 +54,7 @@ public interface Smartcron {
      *            delay unit
      * @return computed next execution date
      */
-    default Date delay(long delay, ChronoUnit unit) {
+    default LocalDateTime delay(long delay, ChronoUnit unit) {
 
         // validate delay
         if (delay < 1) {
@@ -65,6 +62,6 @@ public interface Smartcron {
         }
 
         // compute date
-        return new Date(System.currentTimeMillis() + ChronoUnitUtils.toMillis(delay, unit));
+        return LocalDateTime.now().plus(delay, unit);
     }
 }

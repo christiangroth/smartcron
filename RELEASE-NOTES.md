@@ -6,6 +6,7 @@ Release Notes
 - fixed bug in delay calculation
 - allowed smartcrons to be recoverable
 - enhanced smartcron metadata
+- switched to new Java 8 date time API
 - ...
 
 0.2.0
