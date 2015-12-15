@@ -50,7 +50,7 @@
 		<dependency>
 		    <groupId>org.slf4j</groupId>
 		    <artifactId>slf4j-api</artifactId>
-		    <version>1.7.12</version>
+		    <version>1.7.13</version>
 		</dependency>
 		
 		<!-- testing dependencies -->
@@ -63,13 +63,13 @@
 		<dependency>
 			<groupId>com.jayway.awaitility</groupId>
 			<artifactId>awaitility</artifactId>
-			<version>1.6.3</version>
+			<version>1.7.0</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 		    <groupId>org.slf4j</groupId>
 		    <artifactId>slf4j-simple</artifactId>
-		    <version>1.7.12</version>
+		    <version>1.7.13</version>
 		    <scope>test</scope>
 		</dependency>
 	</dependencies>
@@ -161,7 +161,7 @@
 			<plugin>
 			    <groupId>org.eluder.coveralls</groupId>
 			    <artifactId>coveralls-maven-plugin</artifactId>
-			    <version>4.0.0</version>
+			    <version>4.1.0</version>
 			</plugin>
 			<plugin>
 			    <groupId>org.codehaus.mojo</groupId>
