@@ -20,6 +20,7 @@ import com.jayway.awaitility.core.ConditionFactory;
 
 import de.chrgroth.smartcron.api.Smartcron;
 import de.chrgroth.smartcron.model.Counter;
+import de.chrgroth.smartcron.model.SmartcronExecution;
 import de.chrgroth.smartcron.model.SmartcronMetadata;
 
 public class SmartcronsTest {
@@ -247,15 +248,17 @@ public class SmartcronsTest {
         Assert.assertEquals(counter.getClass().getName(), metadata.getName());
 
         // assert executions
-        Assert.assertTrue(metadata.getExecutions().size() >= 2);
-        Assert.assertNull(metadata.getExecutions().get(0).getScheduled());
-        Assert.assertNotNull(metadata.getExecutions().get(0).getStarted());
-        Assert.assertNull(metadata.getExecutions().get(0).getError());
-        Assert.assertNotNull(metadata.getExecutions().get(0).getNextExecution());
-        Assert.assertNotNull(metadata.getExecutions().get(1).getScheduled());
-        Assert.assertNotNull(metadata.getExecutions().get(1).getStarted());
-        Assert.assertNull(metadata.getExecutions().get(1).getError());
-        Assert.assertNotNull(metadata.getExecutions().get(1).getNextExecution());
+        int size = metadata.getExecutions().size();
+        Assert.assertTrue(size >= 2);
+        SmartcronExecution smartcronExecution = metadata.getExecutions().get(size - 1);
+        Assert.assertNull(smartcronExecution.getScheduled());
+        Assert.assertNotNull(smartcronExecution.getStarted());
+        Assert.assertNull(smartcronExecution.getError());
+        Assert.assertNotNull(smartcronExecution.getNextExecution());
+        Assert.assertNotNull(metadata.getExecutions().get(size - 2).getScheduled());
+        Assert.assertNotNull(metadata.getExecutions().get(size - 2).getStarted());
+        Assert.assertNull(metadata.getExecutions().get(size - 2).getError());
+        Assert.assertNotNull(metadata.getExecutions().get(size - 2).getNextExecution());
     }
 
     @Test

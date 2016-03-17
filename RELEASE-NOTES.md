@@ -3,6 +3,9 @@ Release Notes
 
 0.4.0 (in progress)
 -------------------
+- limit execution history to prevent out of memory scenarios
+- newest executions first in history
+- added average duration and error percentage to execution metadata
 - ...
 
 0.3.0

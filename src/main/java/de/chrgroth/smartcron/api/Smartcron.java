@@ -30,6 +30,15 @@ public interface Smartcron {
     }
 
     /**
+     * Tells how many {@link SmartcronExecution} instances should be contained in {@link SmartcronMetadata}.
+     *
+     * @return maximum number of {@link SmartcronExecution} instances
+     */
+    default int maxExecutionHistorySize() {
+        return 100;
+    }
+
+    /**
      * Defines if smartcron execution will be aborted on uncaught exception. Overwrite to continue after uncaught exception and be sure to implement
      * {@link #recover()} to be able to start next execution;
      *

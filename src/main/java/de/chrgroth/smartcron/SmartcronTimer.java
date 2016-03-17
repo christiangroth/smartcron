@@ -80,14 +80,18 @@ public class SmartcronTimer extends TimerTask {
             if (smartcron.abortOnException()) {
                 LOG.error("smartcron " + smartcronName + " crashed: " + e.getMessage() + ". no further executions will be planned.", e);
             } else {
-                LOG.warn("smartcron " + smartcronName + " crashed: " + e.getMessage() + ". trying to reover.", e);
+                LOG.warn("smartcron " + smartcronName + " crashed: " + e.getMessage() + ". trying to recover.", e);
                 nextSchedule = smartcron.recover();
             }
         }
 
         // add execution
         if (smartcron.trackExecutions()) {
-            executions.add(new SmartcronExecution(scheduled, started, duration, error, nextSchedule));
+            int maxExecutionHistorySize = smartcron.maxExecutionHistorySize();
+            if (executions.size() == maxExecutionHistorySize) {
+                executions.remove(maxExecutionHistorySize - 1);
+            }
+            executions.add(0, new SmartcronExecution(scheduled, started, duration, error, nextSchedule));
         }
 
         // abort if no follow up is needed
