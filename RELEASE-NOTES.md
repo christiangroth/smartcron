@@ -3,6 +3,10 @@ Release Notes
 
 0.5.0 (in progress)
 -------------------
+- refactored internal smartcron handling
+- smartcrons may be deactivated and activated, without removing
+- added smartcron modes
+- added smartcron statistics for better reporting even without history
 - ...
 
 0.4.0
@@ -10,7 +14,6 @@ Release Notes
 - limit execution history to prevent out of memory scenarios
 - newest executions first in history
 - added average duration and error percentage to execution metadata
-- ...
 
 0.3.0
 -----
