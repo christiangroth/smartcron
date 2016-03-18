@@ -50,10 +50,9 @@ public class SmartcronTimer extends TimerTask {
             // check for soft error
             String softError = context.getError();
             if (softError != null && !softError.trim().isEmpty()) {
-                LOG.warn("smartcron " + smartcronName + " with soft error: " + softError);
+                LOG.warn("smartcron " + smartcronName + " finished with error: " + softError);
                 error = softError;
             }
-
         } catch (Exception e) {
 
             // finished with hard error

@@ -57,7 +57,7 @@ public class SmartcronsTest {
         counter = new Counter() {
 
             @Override
-            protected LocalDateTime calc() {
+            protected LocalDateTime calc(SmartcronExecutionContext context) {
                 return null;
             }
         };
@@ -93,7 +93,7 @@ public class SmartcronsTest {
         counter = new Counter() {
 
             @Override
-            protected LocalDateTime calc() {
+            protected LocalDateTime calc(SmartcronExecutionContext context) {
                 return null;
             }
         };
@@ -108,7 +108,7 @@ public class SmartcronsTest {
         counter = new Counter() {
 
             @Override
-            protected LocalDateTime calc() {
+            protected LocalDateTime calc(SmartcronExecutionContext context) {
                 return delay(10, ChronoUnit.MILLIS);
             }
         };
@@ -129,7 +129,7 @@ public class SmartcronsTest {
         counter = new Counter() {
 
             @Override
-            protected LocalDateTime calc() {
+            protected LocalDateTime calc(SmartcronExecutionContext context) {
                 return delay(Long.MAX_VALUE, ChronoUnit.MILLIS);
             }
         };
@@ -147,7 +147,7 @@ public class SmartcronsTest {
         counter = new Counter() {
 
             @Override
-            protected LocalDateTime calc() {
+            protected LocalDateTime calc(SmartcronExecutionContext context) {
                 return LocalDateTime.now().minus(10000, ChronoUnit.MILLIS);
             }
         };
@@ -175,7 +175,7 @@ public class SmartcronsTest {
         counter = new Counter() {
 
             @Override
-            protected LocalDateTime calc() {
+            protected LocalDateTime calc(SmartcronExecutionContext context) {
                 return delay(5000, ChronoUnit.MILLIS);
             }
         };
@@ -236,7 +236,7 @@ public class SmartcronsTest {
         // schedule smartcron
         counter = new Counter() {
             @Override
-            protected LocalDateTime calc() {
+            protected LocalDateTime calc(SmartcronExecutionContext context) {
                 metadataInstances.add(smartcrons.getMetadata().iterator().next());
                 int diff = 5 - counter;
                 if (diff > 0) {
@@ -264,7 +264,7 @@ public class SmartcronsTest {
     }
 
     @Test
-    public void metadataInformationNoExecutions() {
+    public void metadataInformationNoHistory() {
 
         // schedule smartcron
         counter = new Counter() {
@@ -275,7 +275,7 @@ public class SmartcronsTest {
             }
 
             @Override
-            protected LocalDateTime calc() {
+            protected LocalDateTime calc(SmartcronExecutionContext context) {
                 return delay(25, ChronoUnit.MILLIS);
             }
         };
@@ -315,6 +315,125 @@ public class SmartcronsTest {
                 return exact ? counter.counter == count : counter.counter >= count;
             }
         };
+    }
+
+    @Test
+    public void softError() {
+
+        // schedule
+        counter = new Counter() {
+
+            @Override
+            protected LocalDateTime calc(SmartcronExecutionContext context) {
+                context.setError("something happened");
+                return null;
+            }
+        };
+        smartcrons.schedule(counter);
+        await().until(counterCalled(1, true));
+
+        // take time to let statistics update
+        sleep(100);
+
+        // check metadata
+        Set<SmartcronMetadata> metadata = smartcrons.getMetadata();
+        Assert.assertEquals(1, metadata.size());
+        SmartcronMetadata smartcronMetadata = metadata.iterator().next();
+        Assert.assertFalse(smartcronMetadata.isActive());
+        Assert.assertEquals(1, smartcronMetadata.getHistory().size());
+        Assert.assertEquals("something happened", smartcronMetadata.getHistory().get(0).getError());
+        Assert.assertEquals(1, smartcronMetadata.getStatistics().getCount());
+        Assert.assertEquals(1, smartcronMetadata.getStatistics().getErrors());
+    }
+
+    private void sleep(int i) {
+        try {
+            Thread.sleep(i);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void historyOverflow() {
+
+        // schedule
+        counter = new Counter() {
+
+            @Override
+            public int maxExecutionHistorySize() {
+                return 1;
+            }
+
+            @Override
+            protected LocalDateTime calc(SmartcronExecutionContext context) {
+                return delay(10, ChronoUnit.MILLIS);
+            }
+        };
+        smartcrons.schedule(counter);
+        await().atMost(Duration.ONE_SECOND).until(counterCalled(3, true));
+
+        // check metadata
+        Set<SmartcronMetadata> metadata = smartcrons.getMetadata();
+        Assert.assertEquals(1, metadata.size());
+        SmartcronMetadata smartcronMetadata = metadata.iterator().next();
+        Assert.assertEquals(1, smartcronMetadata.getHistory().size());
+
+        // shutdown
+        smartcrons.shutdown();
+    }
+
+    @Test
+    public void ignoreInHistory() {
+
+        // schedule
+        counter = new Counter() {
+
+            @Override
+            protected LocalDateTime calc(SmartcronExecutionContext context) {
+                context.setIgnoreInHistory(true);
+                return delay(10, ChronoUnit.MILLIS);
+            }
+        };
+        smartcrons.schedule(counter);
+        await().atMost(Duration.ONE_SECOND).until(counterCalled(3, true));
+
+        // check metadata
+        Set<SmartcronMetadata> metadata = smartcrons.getMetadata();
+        Assert.assertEquals(1, metadata.size());
+        SmartcronMetadata smartcronMetadata = metadata.iterator().next();
+        Assert.assertEquals(0, smartcronMetadata.getHistory().size());
+
+        // shutdown
+        smartcrons.shutdown();
+    }
+
+    @Test
+    public void executionModes() {
+
+        // schedule
+        counter = new Counter() {
+
+            @Override
+            protected LocalDateTime calc(SmartcronExecutionContext context) {
+                context.setMode("" + counter);
+                return counter == 2 ? abort() : delay(100, ChronoUnit.MILLIS);
+            }
+        };
+        smartcrons.schedule(counter);
+        await().until(counterCalled(2, true));
+        smartcrons.deactivate(counter.getClass());
+
+        // check metadata
+        Set<SmartcronMetadata> metadata = smartcrons.getMetadata();
+        Assert.assertEquals(1, metadata.size());
+        SmartcronMetadata smartcronMetadata = metadata.iterator().next();
+        Assert.assertEquals(2, smartcronMetadata.getStatistics().getCount());
+        Assert.assertEquals(1, smartcronMetadata.getStatisticsPerMode().get("1").getCount());
+        Assert.assertEquals(1, smartcronMetadata.getStatisticsPerMode().get("2").getCount());
+
+        // shutdown
+        smartcrons.shutdown();
     }
 
     @After

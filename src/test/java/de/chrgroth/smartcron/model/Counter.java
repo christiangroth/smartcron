@@ -12,8 +12,8 @@ public abstract class Counter implements Smartcron {
     @Override
     public LocalDateTime run(SmartcronExecutionContext context) {
         counter++;
-        return calc();
+        return calc(context);
     }
 
-    protected abstract LocalDateTime calc();
+    protected abstract LocalDateTime calc(SmartcronExecutionContext context);
 }
