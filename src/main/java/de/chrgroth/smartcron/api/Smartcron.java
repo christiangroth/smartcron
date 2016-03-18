@@ -16,16 +16,18 @@ public interface Smartcron {
     /**
      * Executes the scheduled smartcron and returns next execution date.
      *
+     * @param context
+     *            execution context
      * @return next execution date
      */
-    LocalDateTime run();
+    LocalDateTime run(SmartcronExecutionContext context);
 
     /**
      * Tells whether all {@link SmartcronExecution} instances should be contained in {@link SmartcronMetadata}.
      *
      * @return true if {@link SmartcronExecution} instances should be saved, false otherwise
      */
-    default boolean trackExecutions() {
+    default boolean executionHistory() {
         return true;
     }
 

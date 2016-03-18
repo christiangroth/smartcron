@@ -1,6 +1,5 @@
 package de.chrgroth.smartcron;
 
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -12,27 +11,34 @@ import de.chrgroth.smartcron.model.SmartcronMetadata;
 
 /**
  * Allows to control {@link Smartcron} instances. A new smartcron is scheduled using {@link #schedule(Smartcron)}. Before application shutdown
- * {@link #shutdown()} may be used to cleanup all running instances.
+ * {@link #shutdown()} may be used to stop all running instances.
  *
  * @author Christian Groth
  */
-
 public class Smartcrons {
 
     private final Timer timer;
-    private final Set<SmartcronTimer> smartcrons;
+    private final Set<SmartcronHandler> smartcrons = new HashSet<>();
 
+    /**
+     * Creates a new instance using default configuration.
+     */
     public Smartcrons() {
         this(null);
     }
 
+    /**
+     * Creates a new instance using given thread name.
+     *
+     * @param threadName
+     *            custom thread name
+     */
     public Smartcrons(String threadName) {
         if (threadName != null && !"".equals(threadName)) {
             timer = new Timer(threadName);
         } else {
             timer = new Timer();
         }
-        smartcrons = new HashSet<>();
     }
 
     /**
@@ -48,49 +54,115 @@ public class Smartcrons {
             return;
         }
 
-        // create timer
-        SmartcronTimer timerTask = new SmartcronTimer(timer, smartcrons, smartcron);
+        // add handler
+        SmartcronHandler handler = new SmartcronHandler(timer, smartcron);
         synchronized (smartcrons) {
-            smartcrons.add(timerTask);
+            smartcrons.add(handler);
         }
 
         // execute now
-        timer.schedule(timerTask, new Date());
+        handler.activate();
     }
 
     /**
-     * Cancels all currently scheduled smartcrons of given type. Returned metadata will still contain next scheduling date although timer was cancelled.
+     * Activates all currently deactivated smartcrons of given type.
+     *
+     * @param type
+     *            type to be activated
+     */
+    public void activate(Class<? extends Smartcron> type) {
+        iterateSmartcrons(new IterationCallback() {
+
+            @Override
+            public void handle(Iterator<SmartcronHandler> iterator, SmartcronHandler handler) {
+                if (handler.isOfType(type) && !handler.isActive()) {
+                    handler.activate();
+                }
+            }
+        });
+    }
+
+    /**
+     * Deactivates all currently active smartcrons of given type.
      *
      * @param type
      *            type to be cancelled
-     * @return metadata for all cancelled smartcrons, never null
      */
-    public Set<SmartcronMetadata> cancel(Class<? extends Smartcron> type) {
-        Set<SmartcronMetadata> cancelled = new HashSet<>();
+    public void deactivate(Class<? extends Smartcron> type) {
+        iterateSmartcrons(new IterationCallback() {
 
-        // remove and collect
-        synchronized (smartcrons) {
-            Iterator<SmartcronTimer> iterator = smartcrons.iterator();
-            while (iterator.hasNext()) {
-                SmartcronTimer timerTask = iterator.next();
-                if (timerTask.isOfType(type)) {
-
-                    // cancel smartcron
-                    timerTask.cancel();
-
-                    // remove from internal set
-                    iterator.remove();
-                    cancelled.add(timerTask.cretaeMetadata());
+            @Override
+            public void handle(Iterator<SmartcronHandler> iterator, SmartcronHandler handler) {
+                if (handler.isOfType(type) && handler.isActive()) {
+                    handler.deactivate();
                 }
             }
-        }
-
-        // done
-        return cancelled;
+        });
     }
 
     /**
-     * Returns metadata about all currently scheduled smartcrons.
+     * Removes all inactive smartcrons from system.
+     *
+     * @return metadata for all removed smartcrons, never null
+     */
+    public Set<SmartcronMetadata> purge() {
+        Set<SmartcronMetadata> result = new HashSet<>();
+
+        // purge
+        iterateSmartcrons(new IterationCallback() {
+
+            @Override
+            public void handle(Iterator<SmartcronHandler> iterator, SmartcronHandler handler) {
+                if (!handler.isActive()) {
+                    iterator.remove();
+                    result.add(handler.cretaeMetadata());
+                }
+            }
+        });
+
+        // done
+        return result;
+    }
+
+    private static interface IterationCallback {
+
+        /**
+         * Called per iteration.
+         *
+         * @param iterator
+         *            current iterator
+         * @param handler
+         *            handler instance
+         */
+        void handle(Iterator<SmartcronHandler> iterator, SmartcronHandler handler);
+    }
+
+    private void iterateSmartcrons(IterationCallback callback) {
+
+        // walk all timer tasks
+        synchronized (smartcrons) {
+            Iterator<SmartcronHandler> iterator = smartcrons.iterator();
+            while (iterator.hasNext()) {
+
+                // delegate
+                callback.handle(iterator, iterator.next());
+            }
+        }
+    }
+
+    /**
+     * Returns metadata for all smartcrons with matching type.
+     *
+     * @param type
+     *            type to be cancelled
+     * @return metadata, never null
+     */
+    public Set<SmartcronMetadata> getMetadata(Class<? extends Smartcron> type) {
+        return new HashSet<>(smartcrons).stream().filter(s -> s.isOfType(type)).map(s -> s.cretaeMetadata()).collect(Collectors.toSet());
+    }
+
+    /**
+     * Returns metadata for all currently scheduled smartcrons.
      *
      * @return metadata, never null
      */
@@ -102,7 +174,8 @@ public class Smartcrons {
      * Cancels all scheduled smartcrons.
      */
     public void shutdown() {
-        timer.cancel();
+        smartcrons.forEach(s -> s.deactivate());
         smartcrons.clear();
+        timer.cancel();
     }
 }

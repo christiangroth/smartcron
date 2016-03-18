@@ -2,57 +2,61 @@ package de.chrgroth.smartcron.model;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
- * Immutable metadata about smartcron instances.
+ * Immutable smartcron instance metadata.
  *
  * @author Christian Groth
  */
 public class SmartcronMetadata {
 
     private final String name;
-    private final List<SmartcronExecution> executions = new ArrayList<>();
-    private final long avgDuration;
-    private final double errorPercentage;
+    private final boolean active;
     private final LocalDateTime scheduled;
+    private final SmartcronStatistics statistics;
+    private final Map<String, SmartcronStatistics> statisticsPerMode = new HashMap<>();
+    private final List<SmartcronExecution> history = new ArrayList<>();
 
-    public SmartcronMetadata(String name, List<SmartcronExecution> executions, LocalDateTime scheduled) {
+    public SmartcronMetadata(String name, boolean active, LocalDateTime scheduled, SmartcronStatistics statistics, Map<String, SmartcronStatistics> statisticsPerMode,
+            List<SmartcronExecution> history) {
         this.name = name;
-        if (executions != null && !executions.isEmpty()) {
-            this.executions.addAll(executions);
-            avgDuration = Math.round((double) executions.stream().mapToLong(se -> se.getDuration()).sum() / (double) executions.size());
-            errorPercentage = Math.round((double) executions.stream().filter(se -> se.getError() != null).count() / (double) executions.size() * 100) / 100;
-        } else {
-            avgDuration = 0;
-            errorPercentage = 0;
-        }
+        this.active = active;
         this.scheduled = scheduled;
+        this.statistics = statistics;
+        this.statisticsPerMode.putAll(statisticsPerMode);
+        this.history.addAll(history);
     }
 
     public String getName() {
         return name;
     }
 
-    public List<SmartcronExecution> getExecutions() {
-        return new ArrayList<>(executions);
-    }
-
-    public long getAvgDuration() {
-        return avgDuration;
-    }
-
-    public double getErrorPercentage() {
-        return errorPercentage;
+    public boolean isActive() {
+        return active;
     }
 
     public LocalDateTime getScheduled() {
         return scheduled;
     }
 
+    public SmartcronStatistics getStatistics() {
+        return statistics;
+    }
+
+    public Map<String, SmartcronStatistics> getStatisticsPerMode() {
+        return new HashMap<>(statisticsPerMode);
+    }
+
+    public List<SmartcronExecution> getHistory() {
+        return history;
+    }
+
     @Override
     public String toString() {
-        return "SmartcronMetadata [name=" + name + ", executions=#" + executions.size() + ", avgDuration=" + avgDuration + ", errorPercentage=" + errorPercentage + ", scheduled="
-                + scheduled + "]";
+        return "SmartcronMetadata [name=" + name + ", active=" + active + ", scheduled=" + scheduled + ", statistics=" + statistics + ", statisticsPerMode=" + statisticsPerMode
+                + ", history.size()=" + history.size() + "]";
     }
 }

@@ -8,6 +8,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import de.chrgroth.smartcron.api.Smartcron;
+import de.chrgroth.smartcron.api.SmartcronExecutionContext;
 
 public class SmartcronTest {
 
@@ -18,7 +19,7 @@ public class SmartcronTest {
         smartcron = new Smartcron() {
 
             @Override
-            public LocalDateTime run() {
+            public LocalDateTime run(SmartcronExecutionContext context) {
                 return null;
             }
         };

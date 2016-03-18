@@ -19,8 +19,8 @@ import com.jayway.awaitility.Duration;
 import com.jayway.awaitility.core.ConditionFactory;
 
 import de.chrgroth.smartcron.api.Smartcron;
+import de.chrgroth.smartcron.api.SmartcronExecutionContext;
 import de.chrgroth.smartcron.model.Counter;
-import de.chrgroth.smartcron.model.SmartcronExecution;
 import de.chrgroth.smartcron.model.SmartcronMetadata;
 
 public class SmartcronsTest {
@@ -46,7 +46,7 @@ public class SmartcronsTest {
         smartcrons.schedule(new Smartcron() {
 
             @Override
-            public LocalDateTime run() {
+            public LocalDateTime run(SmartcronExecutionContext context) {
                 throw new IllegalStateException("expected test exception.");
             }
         });
@@ -75,7 +75,7 @@ public class SmartcronsTest {
             }
 
             @Override
-            public LocalDateTime run() {
+            public LocalDateTime run(SmartcronExecutionContext context) {
                 counter.counter++;
                 if (counter.counter == 1) {
                     throw new IllegalStateException("expected test exception.");
@@ -154,31 +154,79 @@ public class SmartcronsTest {
         schedule();
         Assert.assertEquals(1, smartcrons.getMetadata().size());
 
-        // stop executions explicitly
+        // stop executions implicitly
         smartcrons.shutdown();
     }
 
     @Test
-    public void cancelNull() {
-        smartcrons.cancel(null);
+    public void activateNull() {
+        smartcrons.activate(null);
     }
 
     @Test
-    public void cancelSmartcron() {
+    public void deactivateNull() {
+        smartcrons.deactivate(null);
+    }
 
-        // check no execution
+    @Test
+    public void smartcronLifecycle() {
+
+        // schedule
         counter = new Counter() {
 
             @Override
             protected LocalDateTime calc() {
-                return delay(50, ChronoUnit.MILLIS);
+                return delay(5000, ChronoUnit.MILLIS);
             }
         };
         schedule();
         Assert.assertEquals(1, smartcrons.getMetadata().size());
         await().until(counterCalled(1, true));
-        Set<SmartcronMetadata> cancelled = cancel();
-        Assert.assertEquals(1, cancelled.size());
+
+        // deactivate
+        smartcrons.deactivate(counter.getClass());
+        Set<SmartcronMetadata> metadata = smartcrons.getMetadata();
+        Assert.assertEquals(1, metadata.size());
+        SmartcronMetadata smartcronMetadata = metadata.iterator().next();
+        Assert.assertFalse(smartcronMetadata.isActive());
+
+        // check history
+        Assert.assertNull(smartcronMetadata.getScheduled());
+        Assert.assertNotNull(smartcronMetadata.getHistory());
+        Assert.assertEquals(2, smartcronMetadata.getHistory().size());
+        Assert.assertFalse(smartcronMetadata.getHistory().get(1).isDeactivated());
+        Assert.assertTrue(smartcronMetadata.getHistory().get(0).isDeactivated());
+
+        // reset, restart and deactivate again after next execution
+        counter.counter = 0;
+        smartcrons.activate(counter.getClass());
+        await().until(counterCalled(1, true));
+        metadata = smartcrons.getMetadata();
+        smartcrons.deactivate(counter.getClass());
+
+        // check metadata before deactivation
+        Assert.assertEquals(1, metadata.size());
+        smartcronMetadata = metadata.iterator().next();
+        Assert.assertTrue(smartcronMetadata.isActive());
+        Assert.assertNotNull(smartcronMetadata.getScheduled());
+        Assert.assertNotNull(smartcronMetadata.getHistory());
+        Assert.assertEquals(3, smartcronMetadata.getHistory().size());
+        Assert.assertFalse(smartcronMetadata.getHistory().get(0).isDeactivated());
+
+        // check metadata after deactivation
+        metadata = smartcrons.getMetadata();
+        Assert.assertEquals(1, metadata.size());
+        smartcronMetadata = metadata.iterator().next();
+        Assert.assertFalse(smartcronMetadata.isActive());
+        Assert.assertNull(smartcronMetadata.getScheduled());
+        Assert.assertNotNull(smartcronMetadata.getHistory());
+        Assert.assertEquals(4, smartcronMetadata.getHistory().size());
+        Assert.assertTrue(smartcronMetadata.getHistory().get(0).isDeactivated());
+
+        // purge
+        Set<SmartcronMetadata> purged = smartcrons.purge();
+        Assert.assertNotNull(purged);
+        Assert.assertEquals(1, purged.size());
     }
 
     @Test
@@ -204,7 +252,7 @@ public class SmartcronsTest {
         Awaitility.await().pollInterval(250, TimeUnit.MILLISECONDS).atMost(Duration.FIVE_SECONDS).until(new Callable<Boolean>() {
             @Override
             public Boolean call() throws Exception {
-                boolean empty = smartcrons.getMetadata().isEmpty();
+                boolean empty = smartcrons.getMetadata().stream().filter(m -> m.isActive()).count() == 0;
                 return empty;
             }
         });
@@ -216,59 +264,13 @@ public class SmartcronsTest {
     }
 
     @Test
-    public void metadataInformation() {
-
-        // schedule smartcron
-        counter = new Counter() {
-            @Override
-            protected LocalDateTime calc() {
-                return delay(25, ChronoUnit.MILLIS);
-            }
-        };
-        schedule();
-
-        // wait for some executions
-        Awaitility.await().pollInterval(500, TimeUnit.MILLISECONDS).atMost(Duration.FIVE_SECONDS).until(new Callable<Boolean>() {
-            @Override
-            public Boolean call() throws Exception {
-                return true;
-            }
-        });
-
-        // get metadata by canceling instance
-        Set<SmartcronMetadata> cancelledInstances = smartcrons.cancel(counter.getClass());
-
-        // assert metadata
-        Assert.assertNotNull(cancelledInstances);
-        Assert.assertEquals(1, cancelledInstances.size());
-        SmartcronMetadata metadata = cancelledInstances.iterator().next();
-        Assert.assertNotNull(metadata);
-        Assert.assertNotNull(metadata.getScheduled());
-        Assert.assertNotNull(metadata.getExecutions());
-        Assert.assertEquals(counter.getClass().getName(), metadata.getName());
-
-        // assert executions
-        int size = metadata.getExecutions().size();
-        Assert.assertTrue(size >= 2);
-        SmartcronExecution smartcronExecution = metadata.getExecutions().get(size - 1);
-        Assert.assertNull(smartcronExecution.getScheduled());
-        Assert.assertNotNull(smartcronExecution.getStarted());
-        Assert.assertNull(smartcronExecution.getError());
-        Assert.assertNotNull(smartcronExecution.getNextExecution());
-        Assert.assertNotNull(metadata.getExecutions().get(size - 2).getScheduled());
-        Assert.assertNotNull(metadata.getExecutions().get(size - 2).getStarted());
-        Assert.assertNull(metadata.getExecutions().get(size - 2).getError());
-        Assert.assertNotNull(metadata.getExecutions().get(size - 2).getNextExecution());
-    }
-
-    @Test
     public void metadataInformationNoExecutions() {
 
         // schedule smartcron
         counter = new Counter() {
 
             @Override
-            public boolean trackExecutions() {
+            public boolean executionHistory() {
                 return false;
             }
 
@@ -287,30 +289,23 @@ public class SmartcronsTest {
             }
         });
 
-        // get metadata by canceling instance
-        Set<SmartcronMetadata> cancelledInstances = smartcrons.cancel(counter.getClass());
+        // get metadata by deactivating instance
+        smartcrons.deactivate(counter.getClass());
+        Set<SmartcronMetadata> metadata = smartcrons.getMetadata(counter.getClass());
 
         // assert metadata
-        Assert.assertNotNull(cancelledInstances);
-        Assert.assertEquals(1, cancelledInstances.size());
-        SmartcronMetadata metadata = cancelledInstances.iterator().next();
         Assert.assertNotNull(metadata);
-        Assert.assertNotNull(metadata.getScheduled());
-        Assert.assertNotNull(metadata.getExecutions());
-        Assert.assertTrue(metadata.getExecutions().isEmpty());
-        Assert.assertEquals(counter.getClass().getName(), metadata.getName());
+        Assert.assertEquals(1, metadata.size());
+        SmartcronMetadata smartcronMetadata = metadata.iterator().next();
+        Assert.assertNotNull(smartcronMetadata);
+        Assert.assertNull(smartcronMetadata.getScheduled());
+        Assert.assertNotNull(smartcronMetadata.getHistory());
+        Assert.assertTrue(smartcronMetadata.getHistory().isEmpty());
+        Assert.assertEquals(counter.getClass().getName(), smartcronMetadata.getName());
     }
 
     private void schedule() {
         smartcrons.schedule(counter);
-    }
-
-    private Set<SmartcronMetadata> cancel() {
-        return smartcrons.cancel(counter.getClass());
-    }
-
-    private ConditionFactory await() {
-        return Awaitility.await().pollInterval(new Duration(10, TimeUnit.MILLISECONDS)).atMost(Duration.TWO_HUNDRED_MILLISECONDS);
     }
 
     private Callable<Boolean> counterCalled(int count, boolean exact) {
@@ -331,8 +326,12 @@ public class SmartcronsTest {
         await().until(new Callable<Boolean>() {
             @Override
             public Boolean call() throws Exception {
-                return smartcrons.getMetadata().isEmpty();
+                return smartcrons.getMetadata().stream().filter(m -> m.isActive()).count() == 0;
             }
         });
+    }
+
+    private ConditionFactory await() {
+        return Awaitility.await().pollInterval(new Duration(10, TimeUnit.MILLISECONDS)).atMost(Duration.TWO_HUNDRED_MILLISECONDS);
     }
 }
