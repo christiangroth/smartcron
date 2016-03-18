@@ -11,7 +11,7 @@ public class SmartcronExecutionContext {
     /**
      * Default execution mode.
      */
-    public static final String MODE_DEFAULT = null;
+    public static final String MODE_DEFAULT = "default";
 
     private String mode = MODE_DEFAULT;
     private String error;
