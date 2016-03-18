@@ -163,10 +163,14 @@ public class SmartcronsTest {
         smartcrons.activate(null);
     }
 
+    // TODO activate active
+
     @Test
     public void deactivateNull() {
         smartcrons.deactivate(null);
     }
+
+    // TODO deactivate inactive
 
     @Test
     public void smartcronLifecycle() {
@@ -264,7 +268,7 @@ public class SmartcronsTest {
     }
 
     @Test
-    public void metadataInformationNoHistory() {
+    public void noHistory() {
 
         // schedule smartcron
         counter = new Counter() {
@@ -282,12 +286,7 @@ public class SmartcronsTest {
         schedule();
 
         // wait for some executions
-        Awaitility.await().pollInterval(500, TimeUnit.MILLISECONDS).atMost(Duration.FIVE_SECONDS).until(new Callable<Boolean>() {
-            @Override
-            public Boolean call() throws Exception {
-                return true;
-            }
-        });
+        await().until(counterCalled(5, true));
 
         // get metadata by deactivating instance
         smartcrons.deactivate(counter.getClass());
@@ -302,19 +301,6 @@ public class SmartcronsTest {
         Assert.assertNotNull(smartcronMetadata.getHistory());
         Assert.assertTrue(smartcronMetadata.getHistory().isEmpty());
         Assert.assertEquals(counter.getClass().getName(), smartcronMetadata.getName());
-    }
-
-    private void schedule() {
-        smartcrons.schedule(counter);
-    }
-
-    private Callable<Boolean> counterCalled(int count, boolean exact) {
-        return new Callable<Boolean>() {
-            @Override
-            public Boolean call() throws Exception {
-                return exact ? counter.counter == count : counter.counter >= count;
-            }
-        };
     }
 
     @Test
@@ -367,11 +353,11 @@ public class SmartcronsTest {
 
             @Override
             protected LocalDateTime calc(SmartcronExecutionContext context) {
-                return delay(10, ChronoUnit.MILLIS);
+                return delay(100, ChronoUnit.MILLIS);
             }
         };
-        smartcrons.schedule(counter);
-        await().atMost(Duration.ONE_SECOND).until(counterCalled(3, true));
+        schedule();
+        await().until(counterCalled(3, true));
 
         // check metadata
         Set<SmartcronMetadata> metadata = smartcrons.getMetadata();
@@ -392,11 +378,11 @@ public class SmartcronsTest {
             @Override
             protected LocalDateTime calc(SmartcronExecutionContext context) {
                 context.setIgnoreInHistory(true);
-                return delay(10, ChronoUnit.MILLIS);
+                return delay(100, ChronoUnit.MILLIS);
             }
         };
-        smartcrons.schedule(counter);
-        await().atMost(Duration.ONE_SECOND).until(counterCalled(3, true));
+        schedule();
+        await().until(counterCalled(3, true));
 
         // check metadata
         Set<SmartcronMetadata> metadata = smartcrons.getMetadata();
@@ -420,7 +406,7 @@ public class SmartcronsTest {
                 return counter == 2 ? abort() : delay(100, ChronoUnit.MILLIS);
             }
         };
-        smartcrons.schedule(counter);
+        schedule();
         await().until(counterCalled(2, true));
         smartcrons.deactivate(counter.getClass());
 
@@ -434,6 +420,19 @@ public class SmartcronsTest {
 
         // shutdown
         smartcrons.shutdown();
+    }
+
+    private void schedule() {
+        smartcrons.schedule(counter);
+    }
+
+    private Callable<Boolean> counterCalled(int count, boolean exact) {
+        return new Callable<Boolean>() {
+            @Override
+            public Boolean call() throws Exception {
+                return exact ? counter.counter == count : counter.counter >= count;
+            }
+        };
     }
 
     @After
@@ -451,6 +450,6 @@ public class SmartcronsTest {
     }
 
     private ConditionFactory await() {
-        return Awaitility.await().pollInterval(new Duration(10, TimeUnit.MILLISECONDS)).atMost(Duration.TWO_HUNDRED_MILLISECONDS);
+        return Awaitility.await().pollInterval(new Duration(10, TimeUnit.MILLISECONDS)).atMost(Duration.ONE_SECOND);
     }
 }
