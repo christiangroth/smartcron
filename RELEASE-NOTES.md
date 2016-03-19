@@ -1,6 +1,10 @@
 Release Notes
 =====================
 
+0.6.0 (in progress)
+-------------------
+- ...
+
 0.5.0
 -----
 - refactored internal smartcron handling
