@@ -1,13 +1,12 @@
 Release Notes
 =====================
 
-0.5.0 (in progress)
--------------------
+0.5.0
+-----
 - refactored internal smartcron handling
 - smartcrons may be deactivated and activated, without removing
 - added smartcron modes
 - added smartcron statistics for better reporting even without history
-- ...
 
 0.4.0
 -----
