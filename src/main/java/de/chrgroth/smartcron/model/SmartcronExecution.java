@@ -22,7 +22,7 @@ public class SmartcronExecution {
     }
 
     private SmartcronExecution() {
-        this(null, null, null, 0l, null, null, true);
+        this(null, null, null, 0L, null, null, true);
     }
 
     public SmartcronExecution(LocalDateTime scheduled, LocalDateTime started, String mode, long duration, String error, LocalDateTime nextExecution) {

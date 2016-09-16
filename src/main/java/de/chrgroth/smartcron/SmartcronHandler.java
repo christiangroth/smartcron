@@ -66,7 +66,7 @@ public class SmartcronHandler {
         active = true;
         task = new SmartcronTimer(this, null);
         try {
-            timer.schedule(task, 0l);
+            timer.schedule(task, 0L);
         } catch (Exception e) {
             LOG.error("scheduling smartcron " + smartcronName + " failed: " + e.getMessage(), e);
             active = false;

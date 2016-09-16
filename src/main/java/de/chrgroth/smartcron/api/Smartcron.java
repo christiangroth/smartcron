@@ -13,6 +13,8 @@ import de.chrgroth.smartcron.model.SmartcronMetadata;
  */
 public interface Smartcron {
 
+    int DEFAULT_MAX_EXECUTION_HISTORY_SIZE = 100;
+
     /**
      * Executes the scheduled smartcron and returns next execution date.
      *
@@ -37,7 +39,7 @@ public interface Smartcron {
      * @return maximum number of {@link SmartcronExecution} instances
      */
     default int maxExecutionHistorySize() {
-        return 100;
+        return DEFAULT_MAX_EXECUTION_HISTORY_SIZE;
     }
 
     /**

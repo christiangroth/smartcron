@@ -71,13 +71,9 @@ public class Smartcrons {
      *            type to be activated
      */
     public void activate(Class<? extends Smartcron> type) {
-        iterateSmartcrons(new IterationCallback() {
-
-            @Override
-            public void handle(Iterator<SmartcronHandler> iterator, SmartcronHandler handler) {
-                if (handler.isOfType(type) && !handler.isActive()) {
-                    handler.activate();
-                }
+        iterateSmartcrons((iterator, handler) -> {
+            if (handler.isOfType(type) && !handler.isActive()) {
+                handler.activate();
             }
         });
     }
@@ -89,13 +85,9 @@ public class Smartcrons {
      *            type to be cancelled
      */
     public void deactivate(Class<? extends Smartcron> type) {
-        iterateSmartcrons(new IterationCallback() {
-
-            @Override
-            public void handle(Iterator<SmartcronHandler> iterator, SmartcronHandler handler) {
-                if (handler.isOfType(type) && handler.isActive()) {
-                    handler.deactivate();
-                }
+        iterateSmartcrons((iterator, handler) -> {
+            if (handler.isOfType(type) && handler.isActive()) {
+                handler.deactivate();
             }
         });
     }
@@ -109,14 +101,10 @@ public class Smartcrons {
         Set<SmartcronMetadata> result = new HashSet<>();
 
         // purge
-        iterateSmartcrons(new IterationCallback() {
-
-            @Override
-            public void handle(Iterator<SmartcronHandler> iterator, SmartcronHandler handler) {
-                if (!handler.isActive()) {
-                    iterator.remove();
-                    result.add(handler.cretaeMetadata());
-                }
+        iterateSmartcrons((iterator, handler) -> {
+            if (!handler.isActive()) {
+                iterator.remove();
+                result.add(handler.cretaeMetadata());
             }
         });
 
@@ -124,7 +112,7 @@ public class Smartcrons {
         return result;
     }
 
-    private static interface IterationCallback {
+    private interface IterationCallback {
 
         /**
          * Called per iteration.
