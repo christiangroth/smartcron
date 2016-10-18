@@ -2,7 +2,7 @@ Development: [![Build Status](https://secure.travis-ci.org/christiangroth/smartc
 [![Coverage Status](https://coveralls.io/repos/christiangroth/smartcron/badge.svg?branch=develop)](https://coveralls.io/r/christiangroth/smartcron?branch=develop)
 [![Dependency Status](https://www.versioneye.com/user/projects/55389cb57f43bcd8890003e5/badge.svg?style=flat)](https://www.versioneye.com/user/projects/55389cb57f43bcd8890003e5)
 
-Stable: [![Maven Central](https://maven-badges.herokuapp.com/maven-central/de.chrgroth.smartcron/smartcron/badge.svg)](http://search.maven.org/#artifactdetails|de.chrgroth.smartcron|smartcron)
+Stable: [![Maven Central](https://maven-badges.herokuapp.com/maven-central/de.chrgroth.smartcron/smartcron/badge.svg)](https://maven-badges.herokuapp.com/maven-central/de.chrgroth.smartcron/smartcron)
 
 Smartcron
 =========
