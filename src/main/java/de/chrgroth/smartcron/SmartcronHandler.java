@@ -24,6 +24,7 @@ import de.chrgroth.smartcron.model.SmartcronStatistics;
  * @author Christian Groth
  */
 public class SmartcronHandler {
+
     private static final Logger LOG = LoggerFactory.getLogger(SmartcronHandler.class);
 
     // shared from Smartcrons
@@ -183,5 +184,10 @@ public class SmartcronHandler {
 
     public boolean isActive() {
         return active;
+    }
+
+    @Override
+    public String toString() {
+        return "SmartcronHandler [smartcron=" + smartcron + ", smartcronName=" + smartcronName + ", active=" + active + ", scheduled=" + scheduled + "]";
     }
 }

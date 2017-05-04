@@ -6,6 +6,9 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import de.chrgroth.smartcron.api.Smartcron;
 import de.chrgroth.smartcron.model.SmartcronMetadata;
 
@@ -16,6 +19,8 @@ import de.chrgroth.smartcron.model.SmartcronMetadata;
  * @author Christian Groth
  */
 public class Smartcrons {
+
+    private static final Logger LOG = LoggerFactory.getLogger(Smartcrons.class);
 
     private final Timer timer;
     private final Set<SmartcronHandler> smartcrons = new HashSet<>();
@@ -34,11 +39,7 @@ public class Smartcrons {
      *            custom thread name
      */
     public Smartcrons(String threadName) {
-        if (threadName != null && !"".equals(threadName)) {
-            timer = new Timer(threadName);
-        } else {
-            timer = new Timer();
-        }
+        timer = threadName != null ? new Timer(threadName, true) : new Timer(true);
     }
 
     /**
@@ -51,10 +52,12 @@ public class Smartcrons {
 
         // null guard
         if (smartcron == null) {
+            LOG.warn("skip scheduling null smartcron");
             return;
         }
 
         // add handler
+        LOG.info("creating handler for " + smartcron);
         SmartcronHandler handler = new SmartcronHandler(timer, smartcron);
         synchronized (smartcrons) {
             smartcrons.add(handler);
@@ -71,6 +74,7 @@ public class Smartcrons {
      *            type to be activated
      */
     public void activate(Class<? extends Smartcron> type) {
+        LOG.info("activating handlers for smartcrons of type: " + type);
         iterateSmartcrons((iterator, handler) -> {
             if (handler.isOfType(type) && !handler.isActive()) {
                 handler.activate();
@@ -85,6 +89,7 @@ public class Smartcrons {
      *            type to be cancelled
      */
     public void deactivate(Class<? extends Smartcron> type) {
+        LOG.info("deactivating handlers for smartcrons of type: " + type);
         iterateSmartcrons((iterator, handler) -> {
             if (handler.isOfType(type) && handler.isActive()) {
                 handler.deactivate();
@@ -101,8 +106,10 @@ public class Smartcrons {
         Set<SmartcronMetadata> result = new HashSet<>();
 
         // purge
+        LOG.info("removing all inactive smartcron handlers");
         iterateSmartcrons((iterator, handler) -> {
             if (!handler.isActive()) {
+                LOG.info("removing handler: " + handler);
                 iterator.remove();
                 result.add(handler.cretaeMetadata());
             }
