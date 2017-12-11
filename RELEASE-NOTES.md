@@ -1,6 +1,10 @@
 Release Notes
 =====================
 
+0.7.0 (in progress)
+-------------------
+- ...
+
 0.6.0
 -----
 - replaced shared timer with instance per smartcron to allow parallel executions of smartcrons (each timer is backed by a single thread)
