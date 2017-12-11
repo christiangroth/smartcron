@@ -3,7 +3,6 @@ package de.chrgroth.smartcron;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
-import java.util.Timer;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -22,25 +21,7 @@ public class Smartcrons {
 
     private static final Logger LOG = LoggerFactory.getLogger(Smartcrons.class);
 
-    private final Timer timer;
     private final Set<SmartcronHandler> smartcrons = new HashSet<>();
-
-    /**
-     * Creates a new instance using default configuration.
-     */
-    public Smartcrons() {
-        this(null);
-    }
-
-    /**
-     * Creates a new instance using given thread name.
-     *
-     * @param threadName
-     *            custom thread name
-     */
-    public Smartcrons(String threadName) {
-        timer = threadName != null ? new Timer(threadName, true) : new Timer(true);
-    }
 
     /**
      * Starts execution of given smartcron immediately. All further executions depend on smartcrons return value.
@@ -58,7 +39,7 @@ public class Smartcrons {
 
         // add handler
         LOG.info("creating handler for " + smartcron);
-        SmartcronHandler handler = new SmartcronHandler(timer, smartcron);
+        SmartcronHandler handler = new SmartcronHandler(smartcron);
         synchronized (smartcrons) {
             smartcrons.add(handler);
         }
@@ -169,8 +150,7 @@ public class Smartcrons {
      * Cancels all scheduled smartcrons.
      */
     public void shutdown() {
-        smartcrons.forEach(s -> s.deactivate());
+        smartcrons.forEach(s -> s.shutdown());
         smartcrons.clear();
-        timer.cancel();
     }
 }

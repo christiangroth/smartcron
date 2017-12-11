@@ -1,6 +1,5 @@
 package de.chrgroth.smartcron;
 
-import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
 import org.junit.Assert;
@@ -8,7 +7,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import de.chrgroth.smartcron.api.Smartcron;
-import de.chrgroth.smartcron.api.SmartcronExecutionContext;
 
 public class SmartcronTest {
 
@@ -16,16 +14,10 @@ public class SmartcronTest {
 
     @Before
     public void setUp() {
-        smartcron = new Smartcron() {
-
-            @Override
-            public LocalDateTime run(SmartcronExecutionContext context) {
-                return null;
-            }
-        };
+        smartcron = context -> null;
     }
 
-    @Test()
+    @Test
     public void abortExecution() {
         Assert.assertNull(smartcron.abort());
     }

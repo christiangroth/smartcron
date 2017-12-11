@@ -27,10 +27,7 @@ public class SmartcronHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(SmartcronHandler.class);
 
-    // shared from Smartcrons
     private final Timer timer;
-
-    // local for this smartcron / timer task
     private final Smartcron smartcron;
     private final String smartcronName;
     private boolean active;
@@ -40,14 +37,10 @@ public class SmartcronHandler {
     private final Map<String, SmartcronStatistics> statisticsPerMode = new HashMap<>();
     private final List<SmartcronExecution> history = new ArrayList<>();
 
-    public SmartcronHandler(Timer timer, Smartcron smartcron) {
-
-        // shared
-        this.timer = timer;
-
-        // local
+    public SmartcronHandler(Smartcron smartcron) {
         this.smartcron = smartcron;
         smartcronName = smartcron.getClass().getName();
+        timer = new Timer(smartcronName, true);
         active = false;
     }
 
@@ -184,6 +177,11 @@ public class SmartcronHandler {
 
     public boolean isActive() {
         return active;
+    }
+
+    public void shutdown() {
+        deactivate();
+        timer.cancel();
     }
 
     @Override

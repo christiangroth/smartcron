@@ -43,12 +43,8 @@ public class SmartcronsTest {
 
     @Test
     public void scheduleException() {
-        smartcrons.schedule(new Smartcron() {
-
-            @Override
-            public LocalDateTime run(SmartcronExecutionContext context) {
-                throw new IllegalStateException("expected test exception.");
-            }
+        smartcrons.schedule(context -> {
+            throw new IllegalStateException("expected test exception.");
         });
     }
 
@@ -253,12 +249,9 @@ public class SmartcronsTest {
         schedule();
 
         // wait to finish
-        Awaitility.await().pollInterval(250, TimeUnit.MILLISECONDS).atMost(Duration.FIVE_SECONDS).until(new Callable<Boolean>() {
-            @Override
-            public Boolean call() throws Exception {
-                boolean empty = smartcrons.getMetadata().stream().filter(m -> m.isActive()).count() == 0;
-                return empty;
-            }
+        Awaitility.await().pollInterval(250, TimeUnit.MILLISECONDS).atMost(Duration.FIVE_SECONDS).until((Callable<Boolean>) () -> {
+            boolean empty = smartcrons.getMetadata().stream().filter(m -> m.isActive()).count() == 0;
+            return empty;
         });
 
         // assert no identical instances
@@ -422,17 +415,54 @@ public class SmartcronsTest {
         smartcrons.shutdown();
     }
 
+    @Test
+    public void scheduleInParallel() {
+
+        // schedule
+        counter = new Counter() {
+
+            @Override
+            protected LocalDateTime calc(SmartcronExecutionContext context) {
+                System.out.println(Thread.currentThread().getName() + " -> " + counter);
+                return counter == 5 ? abort() : delay(100, ChronoUnit.MILLIS);
+            }
+        };
+        Counter secondCounter = new Counter() {
+
+            @Override
+            protected LocalDateTime calc(SmartcronExecutionContext context) {
+                System.out.println(Thread.currentThread().getName() + " -> " + counter);
+                return counter == 5 ? abort() : delay(100, ChronoUnit.MILLIS);
+            }
+        };
+        schedule();
+        schedule(secondCounter);
+        await().until(counterCalled(5, true));
+        await().until(counterCalled(secondCounter, 5, true));
+        smartcrons.deactivate(counter.getClass());
+
+        // check metadata
+        Set<SmartcronMetadata> metadata = smartcrons.getMetadata();
+        Assert.assertEquals(2, metadata.size());
+
+        // shutdown
+        smartcrons.shutdown();
+    }
+
     private void schedule() {
+        schedule(counter);
+    }
+
+    private void schedule(Counter counter) {
         smartcrons.schedule(counter);
     }
 
     private Callable<Boolean> counterCalled(int count, boolean exact) {
-        return new Callable<Boolean>() {
-            @Override
-            public Boolean call() throws Exception {
-                return exact ? counter.counter == count : counter.counter >= count;
-            }
-        };
+        return counterCalled(counter, count, exact);
+    }
+
+    private Callable<Boolean> counterCalled(Counter counter, int count, boolean exact) {
+        return () -> exact ? counter.counter == count : counter.counter >= count;
     }
 
     @After
@@ -441,12 +471,7 @@ public class SmartcronsTest {
     }
 
     private void noPendingSmartcrons() {
-        await().until(new Callable<Boolean>() {
-            @Override
-            public Boolean call() throws Exception {
-                return smartcrons.getMetadata().stream().filter(m -> m.isActive()).count() == 0;
-            }
-        });
+        await().until((Callable<Boolean>) () -> smartcrons.getMetadata().stream().filter(m -> m.isActive()).count() == 0);
     }
 
     private ConditionFactory await() {
